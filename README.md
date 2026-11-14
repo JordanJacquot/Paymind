@@ -29,3 +29,41 @@ Les logos des marques restent la propriété de leurs marques ; ils servent seul
 - [ ] **7. Première version 0.1.0** : publiée avec l'accord de Jordan et ajoutée à la liste des applis de Mindset.
 
 Les prix de la liste toute prête sont datés : ils sont remis à jour à chaque nouvelle version.
+
+## Construire et essayer
+
+Paymind est écrite en Rust avec Tauri, sur le modèle de Mindcare (`rust\`) : `paymind-vie` (la vie avec Mindset),
+`paymind-donnees` (dossier de données, journal, etat.json, réglages), `paymind-relais` (`Paymind.exe`) et
+`paymind-appli` (`Mindset.exe`, la fenêtre et sa page). Rust 1.99.1 (`rust\rust-toolchain.toml`).
+
+Dans `rust\` :
+
+```
+cargo test --locked --workspace
+cargo test --locked -p paymind-appli --features essai
+cargo clippy --locked --workspace --all-targets -- -D warnings
+cargo fmt --all --check
+```
+
+Le dossier prêt à zipper et le zip (dans PowerShell, depuis la racine du dépôt, chemins complets) :
+
+```
+& '.\outils\construire-rust.ps1' -Sortie '<dossier>' [-Cible '<target-dir de cargo>'] [-SansConstruire]
+& '.\outils\zip-rust.ps1' -Dossier '<dossier>\Paymind' -Zip '<dossier>\Paymind.zip' -VerifierImports 'D:\Projets\Mindset\outils\verifier-imports.ps1'
+```
+
+Les essais qui ouvrent une vraie fenêtre tournent **seulement sur un bureau Windows à part** (`outils\sur-bureau.ps1`),
+avec la construction d'essai (`cargo build -p paymind-appli -p paymind-relais --features paymind-appli/essai`), jamais
+livrée :
+
+- `outils\essai-fenetre.ps1 -Exe <Mindset.exe d'essai> -Resultats <dossier>` : la fenêtre seule (cachée au départ,
+  second lancement, signal d'affichage, quitter.demande, WM_CLOSE, relance au changement de thème) ;
+- `outils\essai-dans-mindset.ps1 -Exe <Mindset.exe d'essai> -Relais <Paymind.exe> -Resultats <dossier>` : Paymind
+  lancée par son relais, accrochée par le code d'accrochage de Mindset, capturée, puis fermée par « Fermer » et
+  « Tout quitter » ;
+- `D:\Projets\Mindset\outils\tester-contrat.ps1 -AppliConstruite <dossier>\Paymind -EntreeApps outils\entree-apps-rust.json` :
+  tout le contrat avec le vrai code de Mindset, sur l'exe livré (aussi lancé par les tests de GitHub).
+
+Exemple (chemins complets : les scripts les lisent depuis le dossier du processus, pas celui de PowerShell) :
+`& 'D:\Projets\Paymind\outils\sur-bureau.ps1' -Script 'D:\Projets\Paymind\outils\essai-dans-mindset.ps1' -Sortie 'D:\Projets\Paymind\_test\essai.txt' -Arguments "..."`.
+L'entrée de Paymind pour la liste des applis de Mindset est dans `outils\entree-apps-rust.json`.

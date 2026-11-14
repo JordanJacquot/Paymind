@@ -1,0 +1,24 @@
+# Le Rust de Paymind (étape 1 du plan : « Paymind apparaît dans Mindset »). Structure et réglages repris du Rust de
+# Mindcare (D:\Projets\Mindcare\rust), lui-même repris du Rust de Mindset.
+[workspace]
+resolver = "3"
+members = ["paymind-donnees", "paymind-vie", "paymind-relais", "paymind-appli"]
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+publish = false
+
+# La bibliothèque commune de la suite (dépôt Mindset), épinglée à une révision relue (jamais une copie du code), la
+# même que Mindcare : json_sur et les chemins comme .NET, le dossier WebView2 des applis Tauri, les thèmes et la lecture
+# des fichiers de pack. Sans ses options par défaut : ni la signature (ring), ni les zips (zip), ni l'heure de Windows ;
+# elle n'apporte que serde_json.
+[workspace.dependencies]
+suite-commun = { git = "https://github.com/JordanJacquot/Mindset", rev = "0aad77c0fd1cd92983775bec64646e1486cc857e", default-features = false }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unsafe_op_in_unsafe_fn = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }

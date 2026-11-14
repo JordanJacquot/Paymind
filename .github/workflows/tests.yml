@@ -1,0 +1,133 @@
+# Vérifications automatiques à chaque envoi (push) et à chaque demande de fusion (pull request). Reprises de la partie
+# « rust » des tests de Mindcare. Tout tourne dans Windows PowerShell 5.1. Aucune fenêtre ne s'ouvre à l'écran de
+# personne, rien n'est installé ni modifié sur la machine en dehors des dossiers temporaires.
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: powershell
+        working-directory: rust
+    env:
+      CARGO_TERM_COLOR: never
+    steps:
+      - name: "Récupérer le dépôt"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: "Fichiers de la suite : .ps1 en UTF-8 avec BOM, aucun tiret long ni demi-cadratin"
+        working-directory: .
+        run: |
+          $problemes = @()
+          foreach ($f in Get-ChildItem -Recurse -File -Include *.ps1 | Where-Object { $_.FullName -notmatch '\\(target|_test)\\' }) {
+            $o = [IO.File]::ReadAllBytes($f.FullName)
+            if (-not ($o.Length -ge 3 -and $o[0] -eq 0xEF -and $o[1] -eq 0xBB -and $o[2] -eq 0xBF)) { $problemes += "$($f.Name) : pas de BOM" }
+          }
+          $tirets = [string][char]0x2013 + [char]0x2014
+          foreach ($f in Get-ChildItem -Recurse -File -Include *.rs, *.ps1, *.json, *.toml, *.md, *.html, *.js, *.css, *.svg, *.yml | Where-Object { $_.FullName -notmatch '\\(target|_test|maquettes|three)\\' }) {
+            $t = [IO.File]::ReadAllText($f.FullName, [Text.Encoding]::UTF8)
+            if ($t.IndexOfAny($tirets.ToCharArray()) -ge 0) { $problemes += "$($f.FullName) : tiret long ou demi-cadratin" }
+          }
+          if ($problemes.Count) { $problemes | ForEach-Object { Write-Host $_ }; exit 1 }
+          Write-Host 'Aucun problème.'
+
+      - name: "Rust 1.99.1, la version figée par rust/rust-toolchain.toml (avec clippy et rustfmt)"
+        run: |
+          rustup toolchain install
+          if ($LASTEXITCODE) { rustup show; if ($LASTEXITCODE) { exit 1 } }
+          rustc --version
+          if ((rustc --version) -notmatch '^rustc 1\.99\.1 ') { Write-Host 'Mauvaise version de Rust.'; exit 1 }
+
+      - name: "Tests Rust : vie avec Mindset, relais, données, permissions de la page (cargo test)"
+        run: cargo test --locked --workspace
+
+      - name: "Tests de la construction d'essai (cargo test --features essai)"
+        run: cargo test --locked -p paymind-appli --features essai
+
+      - name: "Aucun plugin de Tauri interdit (shell, fs, updater, single-instance, global-shortcut)"
+        run: |
+          # (le shell powershell de GitHub arrête tout à la première erreur : cargo écrit ses messages sur stderr)
+          $ErrorActionPreference = 'Continue'
+          $interdits = 'tauri-plugin-shell', 'tauri-plugin-fs', 'tauri-plugin-updater', 'tauri-plugin-single-instance', 'tauri-plugin-global-shortcut'
+          $lock = [IO.File]::ReadAllText((Join-Path (Get-Location) 'Cargo.lock'))
+          $trouves = @()
+          foreach ($p in $interdits) {
+            # 1. le Cargo.lock (toutes les plateformes)
+            if ($lock -match ('(?m)^name = "' + [regex]::Escape($p) + '"\r?$')) { $trouves += "$p (Cargo.lock)" }
+            # 2. cargo tree -i : la bibliothèque ne doit être tirée par rien, sur aucune plateforme
+            $sortie = (cmd /c "cargo tree --locked -i $p --target all -e all 2>&1") | Out-String
+            if ($LASTEXITCODE -eq 0) { $trouves += "$p (cargo tree)" }
+            elseif ($sortie -notmatch 'did not match any packages') { Write-Host $sortie; Write-Host "cargo tree n'a pas pu répondre pour $p."; exit 1 }
+          }
+          if ($trouves.Count) { Write-Host "Plugins interdits trouvés : $($trouves -join ', ')"; exit 1 }
+          Write-Host 'Aucun plugin interdit.'
+          # (sinon GitHub reprend le code de sortie du dernier cargo tree, qui échoue justement quand rien n'est trouvé)
+          exit 0
+
+      - name: "Récupérer les règles Tauri et le contrat de la suite (dépôt Mindset, commit épinglé : outils\\verifier-tauri.ps1, outils\\verifier-imports.ps1, outils\\tester-contrat.ps1)"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: JordanJacquot/Mindset
+          # (84c6e7e : Mindset 3.0.6, celui avec lequel l'étape 1 de Paymind a été essayée sur le PC)
+          ref: 84c6e7e32230672ce79c09fe14e8bb2a739fb56a
+          path: _mindset
+          persist-credentials: false
+
+      - name: "Règles Tauri de la suite (verifier-tauri.ps1 sur rust\\paymind-appli : configuration, capabilities, CSP, plugins, outils de développement, WebView2)"
+        run: |
+          & ..\_mindset\outils\verifier-tauri.ps1 -Projet paymind-appli
+          exit $LASTEXITCODE
+
+      - name: "Construction de publication et dossier de Paymind (outils\\construire-rust.ps1 : Mindset.exe, Paymind.exe, version.json)"
+        run: |
+          & ..\outils\construire-rust.ps1 -Sortie (Join-Path $env:RUNNER_TEMP 'paymind-rust')
+          if (-not $?) { exit 1 }
+
+      - name: "Le zip comme Mindset l'attend (outils\\zip-rust.ps1 : fichiers, version.json, fiches de version, sans construction d'essai, aucun runtime C à part)"
+        run: |
+          & ..\outils\zip-rust.ps1 -Dossier (Join-Path $env:RUNNER_TEMP 'paymind-rust\Paymind') -Zip (Join-Path $env:RUNNER_TEMP 'Paymind.zip') -VerifierImports ..\_mindset\outils\verifier-imports.ps1
+          exit $LASTEXITCODE
+
+      - name: "Contrat de la suite avec le vrai Mindset (tester-contrat.ps1 -AppliConstruite : apps.json, version.json, installation signée par une clé de test, verrou, Mindset.exe, -Demarrage, accrochage, taille minimale, signal d'affichage, suite.json, WM_CLOSE, quitter.demande)"
+        run: |
+          # Sur GitHub, aucun Mindset n'est installé : le signal d'affichage montre sa propre fenêtre (sur le PC, il
+          # ouvrirait le vrai Mindset : ce cas ne se lance que sur GitHub).
+          & ..\_mindset\outils\tester-contrat.ps1 -AppliConstruite (Join-Path $env:RUNNER_TEMP 'paymind-rust\Paymind') -EntreeApps ..\outils\entree-apps-rust.json
+          # (le code du test, jamais un code hérité d'une commande d'avant)
+          if ($LASTEXITCODE -eq 0) { exit 0 }
+          exit 1
+
+      - name: "Clippy strict (aucun avertissement permis)"
+        run: cargo clippy --locked --workspace --all-targets -- -D warnings
+
+      - name: "Clippy strict sur la construction d'essai (option cargo essai de paymind-appli)"
+        run: cargo clippy --locked -p paymind-appli --all-targets --features essai -- -D warnings
+
+      - name: "Mise en forme (cargo fmt)"
+        run: cargo fmt --all --check
+
+      - name: "cargo deny : licences compatibles MIT, failles connues, liste blanche des bibliothèques (Tauri compris), plugins interdits"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # cargo-deny 0.20.2 tout prêt, vérifié par son empreinte (la même que dans Mindset et Mindcare), seulement sur
+          # la machine GitHub
+          $d = Join-Path $env:RUNNER_TEMP 'cargo-deny'
+          gh release download 0.20.2 --repo EmbarkStudios/cargo-deny --pattern 'cargo-deny-0.20.2-x86_64-pc-windows-msvc.tar.gz' --dir $d
+          if ($LASTEXITCODE) { exit 1 }
+          $archive = Join-Path $d 'cargo-deny-0.20.2-x86_64-pc-windows-msvc.tar.gz'
+          $h = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
+          if ($h -ne '975A22143262FD27476D19EE00C7AF67978426E40E1DEE94EED6BBADE1CF87DC') { Write-Host "Empreinte inattendue : $h"; exit 1 }
+          tar -xzf $archive -C $d
+          $exe = Get-ChildItem -LiteralPath $d -Recurse -Filter 'cargo-deny.exe' | Select-Object -First 1
+          & $exe.FullName --version
+          & $exe.FullName --locked check
+          if ($LASTEXITCODE) { exit 1 }

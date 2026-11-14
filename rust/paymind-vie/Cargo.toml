@@ -1,0 +1,17 @@
+[package]
+name = "paymind-vie"
+version = "0.1.0"
+description = "La vie de Paymind avec Mindset (reprise de mindcare-vie) : démarrage, verrou, demandes, accrochage, thème, carte. Sans Tauri et sans Windows : ils sont derrière des traits"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+# Le dossier des données, suite.json, la carte de Mindset et son écriture, le journal, la comparaison sans tenir
+# compte des majuscules (comme PowerShell)
+paymind-donnees = { path = "../paymind-donnees" }
+# Les chemins comme .NET (Join-Path, Split-Path) : la révision épinglée dans le Cargo.toml de l'espace de travail
+suite-commun.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,83 @@
+[package]
+name = "paymind-appli"
+version = "0.1.0"
+description = "Paymind en Rust : le programme (Mindset.exe dans le dossier de Paymind), sa fenêtre Tauri dans Mindset"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+build = "build.rs"
+
+# La bibliothèque : la fenêtre « principale », ses commandes et sa page, sans rien lancer. Le programme et les tests
+# (avec le faux Windows de Tauri, sans aucune fenêtre à l'écran) s'en servent.
+[lib]
+name = "paymind_appli"
+path = "src/lib.rs"
+
+# Le programme s'appelle Mindset.exe comme celui de chaque appli de la suite : le Gestionnaire des tâches range toute
+# la suite sur une seule ligne « Mindset » (contrat-appli, partie 4).
+[[bin]]
+name = "Mindset"
+path = "src/main.rs"
+test = false
+
+# La construction d'essai (`cargo build --features essai`), jamais livrée : seule à lire un dossier de données d'essai
+# (PAYMIND_DONNEES) et à faire une capture de sa fenêtre. Elle ne lit pas HKLM et ne lance que elle-même (jamais le
+# vrai Mindset du PC). L'exe livré (sans l'option) ne connaît rien de tout cela : outils\verifier-sans-essai.ps1
+# cherche ces noms dans l'exe de publication.
+[features]
+essai = []
+
+[dependencies]
+# Versions figées (« = ») : une nouvelle version n'entre que par un changement relu. Les mêmes que Mindcare.
+# Tauri sans ses options par défaut (ni « dynamic-acl », ni « x11 », ni « dbus ») ; jamais « devtools » (règle 5 de
+# regles-tauri.md). « custom-protocol » en dur : sans lui, l'exe chercherait un serveur de développement.
+tauri = { version = "=2.12.5", default-features = false, features = ["wry", "compression", "common-controls-v6", "custom-protocol"] }
+# L'état envoyé à la page (le même serde_json que paymind-donnees et suite-commun)
+serde_json = { version = "=1.0.154", features = ["preserve_order"] }
+# Le dossier WebView2 des applis Tauri et les options fixes du navigateur (règle 7), les thèmes de la suite, la lecture
+# des fichiers de pack (règle 6) : la bibliothèque commune, à la révision épinglée dans le Cargo.toml de l'espace de
+# travail
+suite-commun.workspace = true
+# La vie de l'appli avec Mindset (démarrage, verrou, surveillances), ses données (dossier, journal, etat.json, réglages)
+paymind-vie = { path = "../paymind-vie" }
+paymind-donnees = { path = "../paymind-donnees" }
+
+# Ce qui parle à Windows (verrou, signal, fenêtre, registre, heure, capture de l'essai). La même version que wry, tao
+# et webview2-com, et que le Rust de Mindset et de Mindcare.
+[target.'cfg(windows)'.dependencies.windows]
+version = "=0.62.2"
+features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_Security",
+    "Win32_Storage_Xps",
+    "Win32_System_Registry",
+    "Win32_System_StationsAndDesktops",
+    "Win32_System_SystemInformation",
+    "Win32_System_Threading",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+]
+# Les réglages de WebView2 que Tauri ne transmet pas (menu du clic droit, raccourcis du navigateur, saisie
+# automatique) et sa veille (SetIsVisible) : la même version que celle de wry (déjà dans le Cargo.lock)
+[target.'cfg(windows)'.dependencies.webview2-com]
+version = "=0.39.1"
+
+[build-dependencies]
+# La construction de Tauri : le manifeste des commandes (règle 2), l'icône et la fiche de version de l'exe
+# (FileDescription = productName = « Mindset »), le runtime C rangé dans l'exe (aucune VCRUNTIME140.dll à installer)
+tauri-build = { version = "=2.7.4", default-features = false }
+
+[dev-dependencies]
+# Les tests des permissions : la même dépendance, plus l'option « test » de Tauri (son faux Windows : aucune vraie
+# fenêtre, aucune page chargée). Les options de développement n'entrent que dans les tests, jamais dans l'exe.
+tauri = { version = "=2.12.5", default-features = false, features = ["wry", "compression", "common-controls-v6", "custom-protocol", "test"] }
+
+# Pas `workspace = true` : le module Windows (src\windows) a besoin d'autoriser le code « unsafe », que le reste du
+# dépôt interdit tout à fait (forbid). Ici, il est refusé partout (deny), sauf dans src\windows qui l'autorise.
+[lints.rust]
+unsafe_code = "deny"
+unsafe_op_in_unsafe_fn = "deny"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
