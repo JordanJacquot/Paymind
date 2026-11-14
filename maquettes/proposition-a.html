@@ -1,0 +1,655 @@
+<title>Paymind proposition A</title>
+<style>
+:root { color-scheme: dark; --police: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --fond: #06050F; --fond2: #0C0920; --carte: rgba(16, 13, 38, 0.82); --carte2: rgba(28, 23, 62, 0.9); --ligne: #2A2450;
+  --texte: #ECEAF7; --doux: #A9A3C9; --pale: #6F6894; --P: #00E5FF; --S: #B04BFF; --T: #FF2EB5; --vert: #3DDC84; --orange: #FFB020; --rouge: #FF5C7A;
+  --app: #22E07A; --r: 20px; --vide: color-mix(in srgb, var(--ligne) 50%, var(--fond2));
+  /* les couleurs de cadre des rayons */
+  --c-video: #FF4D5E; --c-musique: #B04BFF; --c-jeux: #FFB020; --c-tel: #00E5FF; --c-assur: #4D8BFF; --c-sante: #FF8FD0; --c-sport: #FF7A3D; --c-presse: #E8E2C8; --c-logiciel: #7CF5E0; --c-autre: #A9A3C9; }
+html { background: var(--fond); }
+body { margin: 0; background: var(--fond); color: var(--texte); font-family: var(--police); -webkit-text-size-adjust: 100%; overflow-x: hidden; }
+* { box-sizing: border-box; }
+button, input { font: inherit; color: inherit; }
+button { border: 0; background: none; cursor: pointer; padding: 0; text-align: inherit; }
+button:focus, input:focus { outline: none; }
+svg { display: block; }
+@property --a-tour { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes tourne { to { --a-tour: 360deg; } }
+@keyframes tourne2 { to { transform: rotate(360deg); } }
+@keyframes flotte { 50% { transform: translateY(-6px); } }
+@keyframes entree { from { opacity: 0; transform: translateY(14px); } }
+@keyframes coule { to { background-position: 300% 0; } }
+@keyframes reflet { 0%, 70% { transform: translateX(-120%); } 100% { transform: translateX(220%); } }
+
+/* ------------------------------------------------ la page de présentation */
+.planche { max-width: 1320px; margin: 0 auto; padding: 34px 20px 60px; }
+.intro { display: flex; align-items: center; gap: 14px; margin: 0 0 8px; }
+.intro h1 { margin: 0; font-size: 26px; font-weight: 800; }
+.intro p { margin: 0; color: var(--doux); font-size: 15px; }
+.sous-intro { margin: 0 0 30px; color: var(--doux); font-size: 15px; line-height: 1.5; max-width: 80ch; }
+.vue { margin-bottom: 46px; }
+.vue > h2 { margin: 0 0 12px; font-size: 18px; font-weight: 700; color: var(--doux); }
+.vue > h2 b { color: var(--texte); }
+
+/* ------------------------------------------------ la fenêtre d'appli */
+.fenetre { position: relative; width: 1280px; height: 760px; max-width: 100%; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; border: 1px solid var(--ligne);
+  background: radial-gradient(1200px 600px at 50% 120%, color-mix(in srgb, var(--S) 14%, transparent), transparent 60%), radial-gradient(900px 500px at -10% -20%, color-mix(in srgb, var(--app) 9%, transparent), transparent 60%), var(--fond);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
+.haut { flex: 0 0 auto; height: 64px; padding: 0 22px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--ligne); background: color-mix(in srgb, var(--fond) 82%, transparent); }
+.marque { display: flex; align-items: center; gap: 10px; margin-right: 12px; white-space: nowrap; min-width: 0; }
+.marque .logo { width: 38px; height: 38px; flex: none; }
+.marque b { font-size: 19px; font-weight: 800; }
+.marque span { font-size: 14px; color: var(--doux); }
+.onglets { display: flex; gap: 6px; min-width: 0; }
+.onglet { font-size: 14px; color: var(--doux); border: 1px solid var(--ligne); border-radius: 999px; padding: 7px 14px; white-space: nowrap; transition: all 180ms ease; }
+.onglet:hover { color: var(--texte); border-color: color-mix(in srgb, var(--S) 60%, var(--ligne)); }
+.onglet.actif { color: #fff; border-color: var(--S); background: color-mix(in srgb, var(--S) 20%, transparent); }
+.ronds-haut { display: flex; gap: 8px; margin-left: auto; padding-left: 16px; flex: none; }
+.rond { --a: var(--P); width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--ligne); display: grid; place-items: center; color: var(--doux); transition: all 180ms ease; }
+.rond svg { width: 19px; height: 19px; }
+.rond:hover { color: var(--a); border-color: color-mix(in srgb, var(--a) 60%, var(--ligne)); background: color-mix(in srgb, var(--a) 12%, transparent); }
+.heure { margin-left: 12px; font-size: 15px; color: var(--doux); font-variant-numeric: tabular-nums; flex: none; }
+.ecran { flex: 1; min-height: 0; position: relative; }
+.defile { height: 100%; padding: 20px 34px 64px; overflow: hidden; }
+.bas { position: absolute; left: 0; right: 0; bottom: 0; height: 50px; padding: 0 26px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.bas-g { font-size: 12.5px; color: var(--pale); }
+.exemple { display: inline-block; padding: 2px 9px; border-radius: 99px; border: 1px dashed var(--pale); color: var(--doux); font-weight: 700; margin-right: 6px; }
+.aides { display: flex; gap: 18px; }
+.aide { display: flex; align-items: center; gap: 7px; font-size: 15px; }
+.aide i { min-width: 26px; height: 26px; padding: 0 8px; border-radius: 7px; background: linear-gradient(180deg, #FFFFFF, #CFCDE0); color: #14102A; font-style: normal; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+
+/* ------------------------------------------------ le bord de plasma */
+.plasma-bord, .plaque { position: relative; border-radius: var(--r); background: var(--carte); isolation: isolate; }
+.plasma-bord::before, .plaque::before { content: ""; position: absolute; inset: -1.5px; border-radius: inherit; padding: 1.5px; pointer-events: none;
+  background: conic-gradient(from var(--a-tour), var(--P), var(--S), var(--T), var(--P));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: tourne 7s linear infinite; opacity: 0.4; transition: opacity 250ms ease; }
+.plasma-bord::after { content: ""; position: absolute; inset: -4px; border-radius: inherit; padding: 4px; pointer-events: none; z-index: -1; filter: blur(10px);
+  background: conic-gradient(from var(--a-tour), var(--P), var(--S), var(--T), var(--P));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: tourne 7s linear infinite; opacity: 0.4; }
+.plasma-bord.fort::before, .plaque:hover::before { opacity: 1; }
+
+/* ------------------------------------------------ la tête de page */
+.tete { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; min-height: 56px; }
+.retour { width: 46px; height: 46px; flex: none; border-radius: 50%; border: 1px solid var(--ligne); background: var(--carte); display: grid; place-items: center; transition: all 180ms ease; }
+.retour svg { width: 22px; height: 22px; }
+.retour:hover { border-color: var(--S); background: color-mix(in srgb, var(--S) 16%, var(--carte)); }
+.ic-page { width: 50px; height: 50px; flex: none; border-radius: 16px; display: grid; place-items: center; color: var(--app); background: color-mix(in srgb, var(--app) 10%, transparent); border: 1px solid color-mix(in srgb, var(--app) 35%, transparent); }
+.ic-page svg { width: 28px; height: 28px; }
+.titres { min-width: 0; }
+.titres h1 { margin: 0; font-size: 28px; font-weight: 800; line-height: 1.15; }
+.titres p { margin: 3px 0 0; color: var(--doux); font-size: 15px; }
+.chemin { color: var(--doux); font-size: 13px; margin-bottom: 2px; } .chemin b { color: var(--texte); font-weight: 600; }
+
+/* La bourse : l'or du héros */
+.bourse { margin-left: auto; display: flex; align-items: center; gap: 14px; padding: 8px 18px 8px 10px; border-radius: 18px; }
+.bourse .sac { width: 46px; height: 46px; flex: none; color: var(--orange); }
+.bourse .sac svg { width: 46px; height: 46px; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--orange) 45%, transparent)); animation: flotte 4s ease-in-out infinite; }
+.bourse .somme { display: flex; flex-direction: column; }
+.bourse .somme span { font-size: 12.5px; color: var(--doux); font-weight: 700; letter-spacing: 0.4px; }
+.bourse .somme b { font-size: 24px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bourse .somme b small { font-size: 14px; color: var(--doux); font-weight: 600; margin-left: 4px; }
+.bourse .sep { width: 1px; align-self: stretch; background: var(--ligne); margin: 4px 2px; }
+
+/* ------------------------------------------------ module déplié */
+.deplie { display: grid; grid-template-columns: minmax(280px, 0.78fr) 1.72fr; gap: 22px; align-items: start; }
+.module { padding: 22px 22px 20px; text-align: center; }
+.reflet { position: absolute; left: 18px; right: 18px; top: 7px; height: 2px; border-radius: 2px; background: rgba(255,255,255,0.1); pointer-events: none; }
+.module h3 { margin: 12px 0 4px; font-size: 21px; }
+.module p { margin: 0 0 14px; color: var(--doux); line-height: 1.45; font-size: 15px; }
+.contenu { min-width: 0; }
+.titre-bloc { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; font-size: 13px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; color: var(--doux); }
+.contenu > .titre-bloc:first-child { margin-top: 0; }
+.titre-bloc .droite { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 600; font-size: 13.5px; }
+
+/* L'anneau des rayons (une vraie proportion : la part de chaque rayon dans le total du mois) */
+.anneau { position: relative; width: 200px; height: 200px; margin: 2px auto 0; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(closest-side, var(--fond2) 76%, transparent 77% 100%),
+  conic-gradient(var(--c-assur) 0 23.27%, var(--fond2) 0 23.6%, var(--c-tel) 0 43.94%, var(--fond2) 0 44.27%, var(--c-sante) 0 63.59%, var(--fond2) 0 63.92%, var(--c-sport) 0 73.93%, var(--fond2) 0 74.26%, var(--c-jeux) 0 84.26%, var(--fond2) 0 84.59%, var(--c-video) 0 94.25%, var(--fond2) 0 94.58%, var(--c-musique) 0 99.67%, var(--fond2) 0 100%); }
+.anneau::before { content: ""; position: absolute; inset: -8px; border-radius: 50%; border: 1px dashed color-mix(in srgb, var(--S) 45%, transparent); animation: tourne2 40s linear infinite; }
+.anneau .centre { text-align: center; }
+.anneau .centre b { display: block; font-size: 44px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.anneau .centre span { font-size: 14px; color: var(--doux); font-weight: 600; }
+.legende { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 3px; text-align: left; }
+.legende li { display: flex; align-items: center; gap: 9px; font-size: 14px; padding: 4px 8px; border-radius: 9px; transition: background 160ms ease; }
+.legende li:hover { background: rgba(255,255,255,0.05); }
+.legende i { width: 10px; height: 10px; border-radius: 3px; flex: none; background: var(--c); }
+.legende span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legende b { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+.legende em { font-style: normal; color: var(--doux); width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------ les objets d'inventaire */
+.objet-case { --c: var(--c-autre); position: relative; width: 64px; height: 64px; flex: none; border-radius: 14px; display: grid; place-items: center;
+  background: radial-gradient(120% 90% at 30% 15%, color-mix(in srgb, var(--c) 30%, var(--fond2)), var(--fond2) 70%);
+  border: 2px solid color-mix(in srgb, var(--c) 75%, transparent);
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,0.35), 0 0 10px color-mix(in srgb, var(--c) 28%, transparent); overflow: hidden; }
+.objet-case .lettre { font-size: 30px; font-weight: 800; color: #fff; line-height: 1; }
+.objet-case .picto { position: absolute; right: 4px; bottom: 4px; width: 17px; height: 17px; color: var(--c); }
+.objet-case::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%); transform: translateX(-120%); }
+.objet-case .coin-c { position: absolute; width: 7px; height: 7px; border: 2px solid var(--c); opacity: 0.8; }
+.objet-case .coin-c.a { top: 3px; left: 3px; border-right: 0; border-bottom: 0; border-radius: 3px 0 0 0; }
+.objet-case .coin-c.b { top: 3px; right: 3px; border-left: 0; border-bottom: 0; border-radius: 0 3px 0 0; }
+
+.sac-grille { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.objet { --c: var(--c-autre); position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 10px 10px; border-radius: 16px; text-align: center;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 9%, var(--carte)), var(--carte));
+  border: 1px solid color-mix(in srgb, var(--c) 40%, var(--ligne)); transition: transform 220ms cubic-bezier(.2, .9, .3, 1), border-color 200ms ease;
+  }
+.objet:hover { transform: translateY(-5px); border-color: var(--c); }
+.objet:hover .objet-case::after { animation: reflet 900ms ease; }
+.objet .nom { font-size: 14.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.objet .prix { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.objet .prix small { font-size: 12px; color: var(--doux); font-weight: 600; margin-left: 3px; }
+.recharge { width: 100%; }
+.recharge .barre { display: block; height: 6px; border-radius: 99px; background: var(--vide); overflow: hidden; }
+.recharge .barre i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 50%, transparent), var(--c)); }
+.recharge .quand { display: flex; justify-content: center; align-items: center; gap: 5px; margin-top: 5px; font-size: 12.5px; color: var(--doux); white-space: nowrap; }
+.recharge .quand svg { width: 13px; height: 13px; }
+.recharge .quand.bientot { color: var(--orange); font-weight: 700; }
+.objet.pause { opacity: 0.55; }
+.objet .pastille-p { position: absolute; top: 8px; left: 8px; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 99px; background: rgba(255,255,255,0.1); color: var(--doux); }
+
+/* Bientôt : les prochaines recharges */
+.bientot { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.prochain { --c: var(--c-autre); display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 10px; border-radius: 16px; min-width: 0; }
+.prochain .objet-case { width: 50px; height: 50px; border-radius: 12px; }
+.prochain .objet-case .lettre { font-size: 22px; }
+.prochain .objet-case .picto { width: 13px; height: 13px; right: 3px; bottom: 3px; }
+.prochain .txt { min-width: 0; flex: 1; }
+.prochain .txt b { display: block; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prochain .txt span { display: block; font-size: 13.5px; color: var(--doux); white-space: nowrap; }
+.prochain .txt span.bientot-t { color: var(--orange); font-weight: 700; }
+.prochain .v { font-weight: 800; font-size: 16px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------ l'échoppe */
+.champ-grand { display: flex; align-items: center; gap: 10px; height: 50px; padding: 0 18px; border-radius: 99px; margin-bottom: 14px; }
+.champ-grand svg { width: 20px; height: 20px; color: var(--doux); flex: none; }
+.champ-grand input { flex: 1; min-width: 0; border: 0; background: transparent; height: 100%; padding: 0; font-size: 16px; }
+.champ-grand input::placeholder { color: var(--pale); }
+.champ-grand:focus-within::before { opacity: 1; }
+.rayons { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+.rayons button { --c: var(--doux); display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 700; color: var(--doux); background: rgba(255,255,255,0.06); padding: 7px 14px 7px 11px; border-radius: 99px; transition: all 200ms ease; white-space: nowrap; }
+.rayons button i { width: 9px; height: 9px; border-radius: 3px; background: var(--c); }
+.rayons button:hover { color: var(--texte); background: rgba(255,255,255,0.11); }
+.rayons button.oui { color: #0B0820; background: linear-gradient(90deg, var(--P), var(--S) 60%, var(--T)); box-shadow: 0 0 14px color-mix(in srgb, var(--S) 45%, transparent); }
+.rayons button.oui i { background: #0B0820; }
+.etal { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.marchandise { --c: var(--c-jeux); display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 16px; min-width: 0;
+  background: var(--carte); border: 1px solid color-mix(in srgb, var(--c) 28%, var(--ligne)); transition: transform 220ms cubic-bezier(.2, .9, .3, 1), border-color 200ms ease;
+  }
+.marchandise:hover { transform: translateY(-4px); border-color: var(--c); }
+.marchandise:hover .objet-case::after { animation: reflet 900ms ease; }
+.marchandise .h { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.marchandise .objet-case { width: 54px; height: 54px; border-radius: 12px; }
+.marchandise .objet-case .lettre { font-size: 24px; }
+.marchandise .objet-case .picto { width: 14px; height: 14px; }
+.marchandise .txt { min-width: 0; }
+.marchandise .txt b { display: block; font-size: 15px; line-height: 1.25; }
+.marchandise .txt span { display: block; font-size: 13px; color: var(--doux); margin-top: 2px; }
+.marchandise .txt span b { display: inline; font-size: 13.5px; color: var(--texte); font-variant-numeric: tabular-nums; }
+.marchandise .btn, .marchandise .deja { align-self: stretch; justify-content: center; }
+.deja { display: inline-flex; align-items: center; gap: 6px; height: 36px; border-radius: 99px; font-size: 13.5px; font-weight: 700; color: var(--vert); background: color-mix(in srgb, var(--vert) 12%, transparent); }
+.deja svg { width: 15px; height: 15px; }
+.echoppe-ic { position: relative; width: 170px; height: 150px; margin: 4px auto 0; display: grid; place-items: center; color: var(--orange); }
+.echoppe-ic svg { width: 120px; height: 120px; filter: drop-shadow(0 0 14px color-mix(in srgb, var(--orange) 40%, transparent)); animation: flotte 4s ease-in-out infinite; }
+.echoppe-ic::before { content: ""; position: absolute; inset: 4px 14px; border-radius: 50%; border: 1px dashed color-mix(in srgb, var(--S) 50%, transparent); animation: tourne2 30s linear infinite; }
+.trait { height: 1px; background: var(--ligne); margin: 18px 0 16px; }
+.a-moi { text-align: left; padding: 14px; border-radius: 16px; border: 1px dashed color-mix(in srgb, var(--app) 45%, var(--ligne)); background: color-mix(in srgb, var(--app) 5%, transparent); }
+.a-moi b { display: block; font-size: 16px; }
+.a-moi span { display: block; font-size: 13.5px; color: var(--doux); margin: 3px 0 12px; line-height: 1.4; }
+
+/* ------------------------------------------------ boutons, champs, interrupteurs */
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 22px; border-radius: 99px; font-weight: 800; font-size: 15px; white-space: nowrap; color: #0B0820; background: linear-gradient(90deg, var(--P), var(--S) 55%, var(--T)); transition: transform 150ms ease, filter 150ms ease; }
+.btn svg { width: 17px; height: 17px; }
+.btn:hover { transform: translateY(-2px); filter: brightness(1.12); }
+.btn.second { color: var(--texte); background: var(--carte2); border: 1px solid var(--ligne); }
+.btn.danger { color: #1A0610; background: var(--rouge); }
+.btn.vert { color: #04130A; background: linear-gradient(90deg, var(--app), #7BF5B4); }
+.btn.petit { height: 36px; padding: 0 15px; font-size: 13.5px; }
+.boutons { display: flex; flex-wrap: wrap; gap: 12px; }
+.reglages { padding: 6px 18px; margin-bottom: 14px; }
+.rang { display: flex; align-items: center; gap: 14px; padding: 10px 0; }
+.rang + .rang { border-top: 1px solid var(--ligne); }
+.rang .ic { width: 40px; height: 40px; flex: none; border-radius: 12px; display: grid; place-items: center; background: rgba(255,255,255,0.05); color: var(--a, var(--P)); }
+.rang .ic svg { width: 21px; height: 21px; }
+.rang .txt { flex: 1; min-width: 0; }
+.rang .txt b { display: block; font-size: 15.5px; }
+.rang .n { display: block; color: var(--doux); font-size: 13.5px; margin-top: 2px; }
+.champ { height: 42px; border-radius: 12px; border: 1px solid var(--ligne); background: var(--fond2); padding: 0 14px; font-size: 16px; display: inline-flex; align-items: center; gap: 8px; transition: border-color 180ms ease; }
+.champ:hover { border-color: color-mix(in srgb, var(--S) 60%, var(--ligne)); }
+.champ input { width: 70px; border: 0; background: transparent; font-weight: 800; font-size: 17px; text-align: right; font-variant-numeric: tabular-nums; }
+.champ .unite { color: var(--doux); font-weight: 700; }
+.champ svg { width: 18px; height: 18px; color: var(--doux); }
+.champ.date { font-weight: 700; }
+.choix-p { display: inline-flex; gap: 4px; padding: 4px; border-radius: 99px; background: color-mix(in srgb, var(--ligne) 20%, var(--fond2)); border: 1px solid var(--ligne); flex-wrap: wrap; }
+.choix-p button { font-size: 14px; font-weight: 700; color: var(--doux); padding: 8px 14px; border-radius: 99px; transition: color 160ms ease; }
+.choix-p button:hover { color: var(--texte); }
+.choix-p button.oui { color: #0B0820; background: linear-gradient(90deg, var(--P), var(--S) 60%, var(--T)); }
+.bascule { width: 52px; height: 30px; flex: none; border-radius: 99px; background: var(--vide); border: 1px solid var(--ligne); position: relative; transition: background 250ms ease; }
+.bascule::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #CFCDE0; transition: transform 260ms cubic-bezier(.3, 1.4, .5, 1); }
+.bascule.oui { border-color: transparent; background: linear-gradient(90deg, var(--P), var(--S), var(--T), var(--P)) 0 0 / 300% 100%; animation: coule 3s linear infinite; box-shadow: 0 0 12px color-mix(in srgb, var(--S) 55%, transparent); }
+.bascule.oui::after { transform: translateX(22px); background: #fff; }
+
+/* La fiche d'objet */
+.grand-objet { --c: var(--c-jeux); width: 140px; height: 140px; margin: 6px auto 0; border-radius: 26px; border-width: 3px; }
+.grand-objet .lettre { font-size: 64px; }
+.grand-objet .picto { width: 28px; height: 28px; right: 9px; bottom: 9px; }
+.grand-objet .coin-c { width: 12px; height: 12px; }
+.grand-objet .coin-c.a { top: 7px; left: 7px; } .grand-objet .coin-c.b { top: 7px; right: 7px; }
+.cadre-objet { position: relative; width: 170px; margin: 0 auto; }
+.cadre-objet::before { content: ""; position: absolute; inset: -6px 8px; border-radius: 50%; border: 1px dashed color-mix(in srgb, var(--c-jeux) 45%, transparent); animation: tourne2 30s linear infinite; }
+.cadre-objet .objet-case { animation: flotte 4.5s ease-in-out infinite; }
+.etiq { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; padding: 4px 11px; border-radius: 99px; background: color-mix(in srgb, var(--c-jeux) 15%, transparent); color: var(--c-jeux); }
+.etiq svg { width: 14px; height: 14px; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; text-align: left; }
+.stats div { padding: 9px 12px; border-radius: 12px; background: rgba(255,255,255,0.04); font-size: 13px; color: var(--doux); }
+.stats b { display: block; color: var(--texte); font-size: 17px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fiche-recharge { --c: var(--c-jeux); margin-top: 14px; text-align: left; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.04); }
+.fiche-recharge .ligne-r { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; color: var(--doux); margin-bottom: 8px; }
+.fiche-recharge .ligne-r b { color: var(--texte); }
+.fiche-recharge .barre { display: block; height: 8px; border-radius: 99px; background: var(--vide); overflow: hidden; }
+.fiche-recharge .barre i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 45%, transparent), var(--c)); }
+.fin { display: flex; align-items: center; gap: 10px; margin-left: auto; flex: none; flex-wrap: wrap; justify-content: flex-end; }
+
+/* ------------------------------------------------ téléphone et petits écrans */
+@media (max-width: 1320px) {
+  .fenetre { width: 100%; height: auto; min-height: 0; }
+  .defile { height: auto; overflow: visible; }
+  .bas { position: static; }
+}
+@media (max-width: 1100px) {
+  .sac-grille { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .etal { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+  .bientot { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .deplie { grid-template-columns: minmax(0, 1fr); }
+  .onglets { display: none; }
+  .tete { flex-wrap: wrap; }
+  .bourse { margin-left: 0; width: 100%; flex-wrap: wrap; }
+  .defile { padding: 16px 16px 20px; }
+}
+@media (max-width: 640px) {
+  .planche { padding: 22px 16px 40px; }
+  .haut { padding: 0 14px; }
+  .marque span, .heure, .ronds-haut .rond:nth-child(n+2) { display: none; }
+  .titres h1 { font-size: 23px; }
+  .rang { flex-wrap: wrap; } .rang .txt { flex: 1 1 170px; } .titre-bloc .droite { display: none; }
+  .rang .fin { margin-left: 54px; justify-content: flex-start; }
+  .bas { flex-direction: column; align-items: flex-start; height: auto; padding: 10px 16px 14px; }
+  .bourse .sep { display: none; }
+  .sac-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stats b { font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="g-logo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22E07A"/><stop offset="1" stop-color="#00E5FF"/></linearGradient>
+    <symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M10 8.5v5l4-2.5z" fill="currentColor"/><path d="M8 20h8"/></symbol>
+    <symbol id="i-musique" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></symbol>
+    <symbol id="i-jeux" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12a4 4 0 0 1 3.9 4.8l-.8 4a2.5 2.5 0 0 1-4.3 1.1L15 16H9l-1.8 1.9a2.5 2.5 0 0 1-4.3-1.1l-.8-4A4 4 0 0 1 6 8z"/><path d="M8 11v3M6.5 12.5h3"/><circle cx="16" cy="11.5" r=".8" fill="currentColor"/><circle cx="17.5" cy="13.5" r=".8" fill="currentColor"/></symbol>
+    <symbol id="i-tel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a15 15 0 0 1 20 0"/><path d="M5.5 12.5a10 10 0 0 1 13 0"/><path d="M9 16a5 5 0 0 1 6 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-assur" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-sante" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.3 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/><path d="M12 10.5v5M9.5 13h5"/></symbol>
+    <symbol id="i-sport" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></symbol>
+    <symbol id="i-presse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2"/><path d="M7 8h7M7 12h7M7 15h4"/></symbol>
+    <symbol id="i-logiciel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8h18M8 12l-2 2 2 2M16 12l2 2-2 2"/></symbol>
+    <symbol id="i-autre" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6 .6-4.5 4 1.3 6L12 16.2 6.6 19.2l1.3-6-4.5-4 6-.6z"/></symbol>
+    <symbol id="i-retour" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-loupe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+    <symbol id="i-reglages" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+    <symbol id="i-aide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></symbol>
+    <symbol id="i-sablier" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12M6 21h12M7 3c0 5 10 5 10 9s-10 4-10 9M17 3c0 5-10 5-10 9s10 4 10 9"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-euro" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.5 6.5A7 7 0 1 0 17.5 17.5"/><path d="M4 10.5h9M4 13.5h8"/></symbol>
+    <symbol id="i-rythme" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4h-4"/></symbol>
+    <symbol id="i-calendrier" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-cloche" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6v12M15 6v12"/></symbol>
+    <symbol id="i-poubelle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+    <symbol id="i-sac" viewBox="0 0 48 48"><path d="M17 9h14l-3.5 6h-7z" fill="#8A5A1E"/><path d="M20 15h8c9 4 14 12 14 19 0 6-6 9-18 9S6 40 6 34c0-7 5-15 14-19z" fill="#C68A3A"/><path d="M20 15h8c9 4 14 12 14 19 0 6-6 9-18 9" fill="none" stroke="#7A4A16" stroke-width="2"/><path d="M18 15.5h12" stroke="#FFB020" stroke-width="3" stroke-linecap="round"/><circle cx="24" cy="31" r="7" fill="#FFB020"/><circle cx="24" cy="31" r="7" fill="none" stroke="#FFE08A" stroke-width="1.5"/><text x="24" y="35" font-size="10" font-weight="800" text-anchor="middle" fill="#7A4A16" font-family="Segoe UI, sans-serif">€</text></symbol>
+    <symbol id="i-echoppe" viewBox="0 0 64 64" fill="none" stroke-linejoin="round" stroke-linecap="round"><path d="M8 24h48v4H8z" fill="#3A2A10" stroke="currentColor" stroke-width="2"/><path d="M6 12h52l-2 12H8z" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M14 12l-2 12M24 12l-1 12M32 12v12M40 12l1 12M50 12l2 12" stroke="currentColor" stroke-width="2"/><path d="M10 28v26h44V28" stroke="currentColor" stroke-width="2.5"/><path d="M16 54V38h12v16" stroke="currentColor" stroke-width="2"/><rect x="34" y="36" width="14" height="10" rx="1.5" stroke="#22E07A" stroke-width="2"/><circle cx="38" cy="41" r="2" fill="#FFB020" stroke="none"/><circle cx="44" cy="41" r="2" fill="#00E5FF" stroke="none"/><path d="M28 6h8" stroke="currentColor" stroke-width="2.5"/></symbol>
+  </defs>
+</svg>
+
+<div class="planche">
+  <div class="intro">
+    <svg width="44" height="44" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4 58 18v28L32 60 6 46V18z" fill="none" stroke="url(#g-logo)" stroke-width="5" stroke-linejoin="round"/><text x="32" y="41" font-size="26" font-weight="800" text-anchor="middle" fill="#22E07A" font-family="Segoe UI, sans-serif">€</text></svg>
+    <div><h1>Paymind, proposition A : l'inventaire du héros</h1><p>Chaque abonnement est un objet de ton sac, avec son prix et le temps avant son prochain paiement.</p></div>
+  </div>
+  <p class="sous-intro">Trois écrans de l'appli. Les abonnements et les prix sont des exemples. La bourse en haut montre ce que tu paies, comme l'or d'un personnage ; l'échoppe du marchand sert à en ajouter ; la fiche de l'objet sert à le modifier.</p>
+
+  <!-- ============================================================ 1. ACCUEIL -->
+  <section class="vue">
+    <h2><b>1. Accueil :</b> mon bilan</h2>
+    <div class="fenetre">
+      <header class="haut">
+        <div class="marque">
+          <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4 58 18v28L32 60 6 46V18z" fill="none" stroke="url(#g-logo)" stroke-width="5" stroke-linejoin="round"/><text x="32" y="41" font-size="26" font-weight="800" text-anchor="middle" fill="#22E07A" font-family="Segoe UI, sans-serif">€</text></svg>
+          <b>Paymind</b><span>Ton sac d'abonnements</span>
+        </div>
+        <nav class="onglets"><button class="onglet actif">Mon bilan</button><button class="onglet">Ajouter</button><button class="onglet">Rappels</button></nav>
+        <div class="ronds-haut">
+          <button class="rond" style="--a:var(--S)" title="Rechercher"><svg><use href="#i-loupe"/></svg></button>
+          <button class="rond" style="--a:var(--doux)" title="Paramètres"><svg><use href="#i-reglages"/></svg></button>
+          <button class="rond" style="--a:var(--T)" title="Aide"><svg><use href="#i-aide"/></svg></button>
+        </div>
+        <span class="heure">14:32</span>
+      </header>
+      <div class="ecran"><div class="defile">
+        <div class="tete">
+          <div class="ic-page"><svg><use href="#i-euro"/></svg></div>
+          <div class="titres"><h1>Mon bilan</h1><p>Samedi 14 novembre : 10 abonnements dans ton sac</p></div>
+          <div class="bourse plasma-bord">
+            <span class="reflet"></span>
+            <div class="sac"><svg viewBox="0 0 48 48"><use href="#i-sac"/></svg></div>
+            <div class="somme"><span>Ta bourse, chaque mois</span><b>193,39 €<small>par mois</small></b></div>
+            <div class="sep"></div>
+            <div class="somme"><span>Sur toute l'année</span><b>2 320,62 €<small>par an</small></b></div>
+          </div>
+        </div>
+
+        <div class="deplie">
+          <aside class="module plasma-bord">
+            <span class="reflet"></span>
+            <div class="anneau"><div class="centre"><b>7</b><span>rayons</span></div></div>
+            <h3>Où part ton or</h3>
+            <ul class="legende">
+              <li style="--c:var(--c-assur)"><i></i><span>Assurances</span><b>45,00 €</b><em>23 %</em></li>
+              <li style="--c:var(--c-tel)"><i></i><span>Téléphone et Internet</span><b>39,98 €</b><em>21 %</em></li>
+              <li style="--c:var(--c-sante)"><i></i><span>Santé</span><b>38,00 €</b><em>20 %</em></li>
+              <li style="--c:var(--c-sport)"><i></i><span>Sport</span><b>19,99 €</b><em>10 %</em></li>
+              <li style="--c:var(--c-jeux)"><i></i><span>Jeux</span><b>19,98 €</b><em>10 %</em></li>
+              <li style="--c:var(--c-video)"><i></i><span>Vidéo</span><b>19,32 €</b><em>10 %</em></li>
+              <li style="--c:var(--c-musique)"><i></i><span>Musique</span><b>11,12 €</b><em>6 %</em></li>
+            </ul>
+          </aside>
+
+          <div class="contenu">
+            <div class="titre-bloc">Bientôt<span class="droite" style="color:var(--doux)">Les 3 prochains paiements</span></div>
+            <div class="bientot">
+              <div class="prochain plasma-bord" style="--c:var(--c-video)">
+                <div class="objet-case"><span class="lettre">N</span><svg class="picto"><use href="#i-video"/></svg></div>
+                <div class="txt"><b>Netflix</b><span class="bientot-t">dans 3 jours</span><span>mardi 17 novembre</span></div>
+                <span class="v">13,49 €</span>
+              </div>
+              <div class="prochain plasma-bord" style="--c:var(--c-musique)">
+                <div class="objet-case"><span class="lettre">S</span><svg class="picto"><use href="#i-musique"/></svg></div>
+                <div class="txt"><b>Spotify</b><span class="bientot-t">dans 6 jours</span><span>vendredi 20 novembre</span></div>
+                <span class="v">11,12 €</span>
+              </div>
+              <div class="prochain plasma-bord" style="--c:var(--c-tel)">
+                <div class="objet-case"><span class="lettre">B</span><svg class="picto"><use href="#i-tel"/></svg></div>
+                <div class="txt"><b>Box Internet</b><span>dans 9 jours</span><span>lundi 23 novembre</span></div>
+                <span class="v">29,99 €</span>
+              </div>
+            </div>
+
+            <div class="titre-bloc">Mon sac<span class="droite" style="color:var(--doux)">La barre se remplit jusqu'au prochain paiement</span></div>
+            <div class="sac-grille">
+              <button class="objet" style="--c:var(--c-video);animation-delay:0ms">
+                <div class="objet-case"><i class="coin-c a"></i><i class="coin-c b"></i><span class="lettre">N</span><svg class="picto"><use href="#i-video"/></svg></div>
+                <span class="nom">Netflix</span><span class="prix">13,49 €<small>par mois</small></span>
+                <span class="recharge"><span class="barre"><i style="width:90%"></i></span><span class="quand bientot"><svg><use href="#i-sablier"/></svg>3 jours</span></span>
+              </button>
+              <button class="objet" style="--c:var(--c-musique);animation-delay:40ms">
+                <div class="objet-case"><i class="coin-c a"></i><i class="coin-c b"></i><span class="lettre">S</span><svg class="picto"><use href="#i-musique"/></svg></div>
+                <span class="nom">Spotify</span><span class="prix">11,12 €<small>par mois</small></span>
+                <span class="recharge"><span class="barre"><i style="width:80%"></i></span><span class="quand bientot"><svg><use href="#i-sablier"/></svg>6 jours</span></span>
+              </button>
+              <button class="objet" style="--c:var(--c-video);animation-delay:80ms">
+                <div class="objet-case"><i class="coin-c a"></i><i class="coin-c b"></i><span class="lettre">A</span><svg class="picto"><use href="#i-video"/></svg></div>
+                <span class="nom">Amazon Prime</span><span class="prix">69,90 €<small>par an</small></span>
+                <span class="recharge"><span class="barre"><i style="width:22%"></i></span><span class="quand"><svg><use href="#i-sablier"/></svg>284 jours</span></span>
+              </button>
+              <button class="objet" style="--c:var(--c-jeux);animation-delay:120ms">
+                <div class="objet-case"><i class="coin-c a"></i><i class="coin-c b"></i><span class="lettre">W</span><svg class="picto"><use href="#i-jeux"/></svg></div>
+                <span class="nom">World of Warcraft</span><span class="prix">12,99 €<small>par mois</small></span>
+                <span class="recharge"><span class="barre"><i style="width:47%"></i></span><span class="quand"><svg><use href="#i-sablier"/></svg>16 jours</span></span>
+              </button>
+              <button class="objet" style="--c:var(--c-jeux);animation-delay:160ms">
+                <div class="objet-case"><i class="coin-c a"></i><i class="coin-c b"></i><span class="lettre">D</span><svg class="picto"><use href="#i-jeux"/></svg></div>
+                <span class="nom">Dofus</span><span class="prix">6,99 €<small>par mois</small></span>
+                <span class="recharge"><span class="barre"><i style="width:60%"></i></span><span class="quand"><svg><use href="#i-sablier"/></svg>12 jours</span></span>
+              </button>
+              <button class="objet" style="--c:var(--c-tel);animation-delay:200ms">
+                <div class="objet-case"><i class="coin-c a"></i><i class="coin-c b"></i><span class="lettre">F</span><svg class="picto"><use href="#i-tel"/></svg></div>
+                <span class="nom">Forfait téléphone</span><span class="prix">9,99 €<small>par mois</small></span>
+                <span class="recharge"><span class="barre"><i style="width:43%"></i></span><span class="quand"><svg><use href="#i-sablier"/></svg>17 jours</span></span>
+              </button>
+              <button class="objet" style="--c:var(--c-tel);animation-delay:240ms">
+                <div class="objet-case"><i class="coin-c a"></i><i class="coin-c b"></i><span class="lettre">B</span><svg class="picto"><use href="#i-tel"/></svg></div>
+                <span class="nom">Box Internet</span><span class="prix">29,99 €<small>par mois</small></span>
+                <span class="recharge"><span class="barre"><i style="width:70%"></i></span><span class="quand"><svg><use href="#i-sablier"/></svg>9 jours</span></span>
+              </button>
+              <button class="objet" style="--c:var(--c-assur);animation-delay:280ms">
+                <div class="objet-case"><i class="coin-c a"></i><i class="coin-c b"></i><span class="lettre">V</span><svg class="picto"><use href="#i-assur"/></svg></div>
+                <span class="nom">Assurance voiture</span><span class="prix">540,00 €<small>par an</small></span>
+                <span class="recharge"><span class="barre"><i style="width:70%"></i></span><span class="quand"><svg><use href="#i-sablier"/></svg>108 jours</span></span>
+              </button>
+              <button class="objet" style="--c:var(--c-sante);animation-delay:320ms">
+                <div class="objet-case"><i class="coin-c a"></i><i class="coin-c b"></i><span class="lettre">M</span><svg class="picto"><use href="#i-sante"/></svg></div>
+                <span class="nom">Mutuelle</span><span class="prix">38,00 €<small>par mois</small></span>
+                <span class="recharge"><span class="barre"><i style="width:45%"></i></span><span class="quand"><svg><use href="#i-sablier"/></svg>17 jours</span></span>
+              </button>
+              <button class="objet" style="--c:var(--c-sport);animation-delay:360ms">
+                <div class="objet-case"><i class="coin-c a"></i><i class="coin-c b"></i><span class="lettre">S</span><svg class="picto"><use href="#i-sport"/></svg></div>
+                <span class="nom">Salle de sport</span><span class="prix">19,99 €<small>par mois</small></span>
+                <span class="recharge"><span class="barre"><i style="width:33%"></i></span><span class="quand"><svg><use href="#i-sablier"/></svg>20 jours</span></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <footer class="bas">
+        <span class="bas-g"><span class="exemple">Exemple</span>abonnements et prix inventés pour la maquette</span>
+        <div class="aides"><span class="aide"><i>B</i>Retour</span><span class="aide"><i>A</i>OK</span></div>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ============================================================ 2. AJOUTER -->
+  <section class="vue">
+    <h2><b>2. Ajouter</b> un abonnement</h2>
+    <div class="fenetre">
+      <header class="haut">
+        <div class="marque">
+          <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4 58 18v28L32 60 6 46V18z" fill="none" stroke="url(#g-logo)" stroke-width="5" stroke-linejoin="round"/><text x="32" y="41" font-size="26" font-weight="800" text-anchor="middle" fill="#22E07A" font-family="Segoe UI, sans-serif">€</text></svg>
+          <b>Paymind</b><span>Ton sac d'abonnements</span>
+        </div>
+        <nav class="onglets"><button class="onglet">Mon bilan</button><button class="onglet actif">Ajouter</button><button class="onglet">Rappels</button></nav>
+        <div class="ronds-haut">
+          <button class="rond" style="--a:var(--S)" title="Rechercher"><svg><use href="#i-loupe"/></svg></button>
+          <button class="rond" style="--a:var(--doux)" title="Paramètres"><svg><use href="#i-reglages"/></svg></button>
+          <button class="rond" style="--a:var(--T)" title="Aide"><svg><use href="#i-aide"/></svg></button>
+        </div>
+        <span class="heure">14:33</span>
+      </header>
+      <div class="ecran"><div class="defile">
+        <div class="tete">
+          <button class="retour" title="Retour"><svg><use href="#i-retour"/></svg></button>
+          <div class="titres"><div class="chemin">Mon bilan</div><h1>L'échoppe du marchand</h1></div>
+        </div>
+        <div class="deplie">
+          <aside class="module plasma-bord">
+            <span class="reflet"></span>
+            <div class="echoppe-ic"><svg><use href="#i-echoppe"/></svg></div>
+            <h3>Choisis un objet</h3>
+            <p>Son prix habituel est déjà rempli. Tu pourras le corriger juste après.</p>
+            <div class="trait"></div>
+            <div class="a-moi">
+              <b>Il n'est pas dans l'échoppe ?</b>
+              <span>Écris-le toi-même : son nom, son prix et quand tu le paies.</span>
+              <button class="btn vert petit"><svg><use href="#i-plus"/></svg>Un abonnement à moi</button>
+            </div>
+          </aside>
+          <div class="contenu">
+            <label class="champ-grand plasma-bord"><svg><use href="#i-loupe"/></svg><input type="text" placeholder="Chercher : Netflix, mutuelle, salle de sport..."></label>
+            <div class="rayons">
+              <button><i style="background:var(--doux)"></i>Tout</button>
+              <button style="--c:var(--c-video)"><i></i>Vidéo</button>
+              <button style="--c:var(--c-musique)"><i></i>Musique</button>
+              <button class="oui" style="--c:var(--c-jeux)"><i></i>Jeux</button>
+              <button style="--c:var(--c-tel)"><i></i>Téléphone et Internet</button>
+              <button style="--c:var(--c-assur)"><i></i>Assurances</button>
+              <button style="--c:var(--c-sante)"><i></i>Santé</button>
+              <button style="--c:var(--c-sport)"><i></i>Sport</button>
+              <button style="--c:var(--c-presse)"><i></i>Presse</button>
+              <button style="--c:var(--c-logiciel)"><i></i>Logiciels</button>
+              <button style="--c:var(--c-autre)"><i></i>Autre</button>
+            </div>
+            <div class="titre-bloc">Rayon Jeux<span class="droite" style="color:var(--doux)">8 objets</span></div>
+            <div class="etal">
+              <div class="marchandise" style="animation-delay:0ms">
+                <div class="h"><div class="objet-case" style="--c:var(--c-jeux)"><span class="lettre">W</span><svg class="picto"><use href="#i-jeux"/></svg></div>
+                  <div class="txt"><b>World of Warcraft</b><span>environ <b>12,99 €</b> par mois</span></div></div>
+                <span class="deja"><svg><use href="#i-ok"/></svg>Déjà dans ton sac</span>
+              </div>
+              <div class="marchandise" style="animation-delay:40ms">
+                <div class="h"><div class="objet-case" style="--c:var(--c-jeux)"><span class="lettre">D</span><svg class="picto"><use href="#i-jeux"/></svg></div>
+                  <div class="txt"><b>Dofus</b><span>environ <b>6,99 €</b> par mois</span></div></div>
+                <span class="deja"><svg><use href="#i-ok"/></svg>Déjà dans ton sac</span>
+              </div>
+              <div class="marchandise" style="animation-delay:80ms">
+                <div class="h"><div class="objet-case" style="--c:var(--c-jeux)"><span class="lettre">X</span><svg class="picto"><use href="#i-jeux"/></svg></div>
+                  <div class="txt"><b>Xbox Game Pass</b><span>environ <b>14,99 €</b> par mois</span></div></div>
+                <button class="btn petit"><svg><use href="#i-plus"/></svg>Ajouter</button>
+              </div>
+              <div class="marchandise" style="animation-delay:120ms">
+                <div class="h"><div class="objet-case" style="--c:var(--c-jeux)"><span class="lettre">P</span><svg class="picto"><use href="#i-jeux"/></svg></div>
+                  <div class="txt"><b>PlayStation Plus</b><span>environ <b>8,99 €</b> par mois</span></div></div>
+                <button class="btn petit"><svg><use href="#i-plus"/></svg>Ajouter</button>
+              </div>
+              <div class="marchandise" style="animation-delay:160ms">
+                <div class="h"><div class="objet-case" style="--c:var(--c-jeux)"><span class="lettre">N</span><svg class="picto"><use href="#i-jeux"/></svg></div>
+                  <div class="txt"><b>Nintendo Switch Online</b><span>environ <b>19,99 €</b> par an</span></div></div>
+                <button class="btn petit"><svg><use href="#i-plus"/></svg>Ajouter</button>
+              </div>
+              <div class="marchandise" style="animation-delay:200ms">
+                <div class="h"><div class="objet-case" style="--c:var(--c-jeux)"><span class="lettre">F</span><svg class="picto"><use href="#i-jeux"/></svg></div>
+                  <div class="txt"><b>Final Fantasy XIV</b><span>environ <b>12,99 €</b> par mois</span></div></div>
+                <button class="btn petit"><svg><use href="#i-plus"/></svg>Ajouter</button>
+              </div>
+              <div class="marchandise" style="animation-delay:240ms">
+                <div class="h"><div class="objet-case" style="--c:var(--c-jeux)"><span class="lettre">U</span><svg class="picto"><use href="#i-jeux"/></svg></div>
+                  <div class="txt"><b>Ubisoft+</b><span>environ <b>7,99 €</b> par mois</span></div></div>
+                <button class="btn petit"><svg><use href="#i-plus"/></svg>Ajouter</button>
+              </div>
+              <div class="marchandise" style="animation-delay:280ms">
+                <div class="h"><div class="objet-case" style="--c:var(--c-jeux)"><span class="lettre">E</span><svg class="picto"><use href="#i-jeux"/></svg></div>
+                  <div class="txt"><b>EA Play</b><span>environ <b>5,99 €</b> par mois</span></div></div>
+                <button class="btn petit"><svg><use href="#i-plus"/></svg>Ajouter</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <footer class="bas">
+        <span class="bas-g"><span class="exemple">Exemple</span>prix habituels donnés à titre d'exemple</span>
+        <div class="aides"><span class="aide"><i>B</i>Retour</span><span class="aide"><i>A</i>OK</span></div>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ============================================================ 3. LA FICHE -->
+  <section class="vue">
+    <h2><b>3. La fiche</b> d'un abonnement</h2>
+    <div class="fenetre">
+      <header class="haut">
+        <div class="marque">
+          <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4 58 18v28L32 60 6 46V18z" fill="none" stroke="url(#g-logo)" stroke-width="5" stroke-linejoin="round"/><text x="32" y="41" font-size="26" font-weight="800" text-anchor="middle" fill="#22E07A" font-family="Segoe UI, sans-serif">€</text></svg>
+          <b>Paymind</b><span>Ton sac d'abonnements</span>
+        </div>
+        <nav class="onglets"><button class="onglet actif">Mon bilan</button><button class="onglet">Ajouter</button><button class="onglet">Rappels</button></nav>
+        <div class="ronds-haut">
+          <button class="rond" style="--a:var(--S)" title="Rechercher"><svg><use href="#i-loupe"/></svg></button>
+          <button class="rond" style="--a:var(--doux)" title="Paramètres"><svg><use href="#i-reglages"/></svg></button>
+          <button class="rond" style="--a:var(--T)" title="Aide"><svg><use href="#i-aide"/></svg></button>
+        </div>
+        <span class="heure">14:34</span>
+      </header>
+      <div class="ecran"><div class="defile">
+        <div class="tete">
+          <button class="retour" title="Retour"><svg><use href="#i-retour"/></svg></button>
+          <div class="titres"><div class="chemin">Mon bilan</div><h1>Dofus</h1></div>
+        </div>
+        <div class="deplie">
+          <aside class="module plasma-bord fort">
+            <span class="reflet"></span>
+            <div class="cadre-objet">
+              <div class="objet-case grand-objet"><i class="coin-c a"></i><i class="coin-c b"></i><span class="lettre">D</span><svg class="picto"><use href="#i-jeux"/></svg></div>
+            </div>
+            <h3>Dofus</h3>
+            <span class="etiq"><svg><use href="#i-jeux"/></svg>Rayon Jeux</span>
+            <div class="stats">
+              <div>Chaque mois<b>6,99 €</b></div>
+              <div>Sur un an<b>83,88 €</b></div>
+            </div>
+            <div class="fiche-recharge">
+              <div class="ligne-r"><span>Prochain paiement</span><b>dans 12 jours</b></div>
+              <span class="barre"><i style="width:60%"></i></span>
+            </div>
+          </aside>
+          <div class="contenu">
+            <div class="titre-bloc">Modifier cet abonnement</div>
+            <div class="reglages plasma-bord">
+              <div class="rang">
+                <span class="ic" style="--a:var(--app)"><svg><use href="#i-euro"/></svg></span>
+                <span class="txt"><b>Prix</b><span class="n">Ce que tu paies à chaque fois</span></span>
+                <span class="fin"><label class="champ"><input type="text" value="6,99"><span class="unite">€</span></label></span>
+              </div>
+              <div class="rang">
+                <span class="ic" style="--a:var(--P)"><svg><use href="#i-rythme"/></svg></span>
+                <span class="txt"><b>Rythme</b><span class="n">Tous les combien tu paies</span></span>
+                <span class="fin"><span class="choix-p"><button>Par semaine</button><button class="oui">Par mois</button><button>Par trimestre</button><button>Par an</button></span></span>
+              </div>
+              <div class="rang">
+                <span class="ic" style="--a:var(--S)"><svg><use href="#i-calendrier"/></svg></span>
+                <span class="txt"><b>Prochain paiement</b><span class="n">Le jour où l'argent part</span></span>
+                <span class="fin"><button class="champ date"><svg><use href="#i-calendrier"/></svg>jeudi 26 novembre 2026</button></span>
+              </div>
+              <div class="rang">
+                <span class="ic" style="--a:var(--T)"><svg><use href="#i-rythme"/></svg></span>
+                <span class="txt"><b>Renouvellement automatique</b><span class="n">Il repart tout seul à chaque échéance</span></span>
+                <span class="fin"><button class="bascule oui" aria-label="Oui"></button></span>
+              </div>
+              <div class="rang">
+                <span class="ic" style="--a:var(--orange)"><svg><use href="#i-cloche"/></svg></span>
+                <span class="txt"><b>Me prévenir 7 jours avant</b><span class="n">Une bulle près de l'horloge le jeudi 19 novembre</span></span>
+                <span class="fin"><button class="bascule oui" aria-label="Oui"></button></span>
+              </div>
+              <div class="rang">
+                <span class="ic" style="--a:var(--doux)"><svg><use href="#i-note"/></svg></span>
+                <span class="txt"><b>Note</b><span class="n">Le compte de Lucas, payé avec la carte bleue</span></span>
+                <span class="fin"><button class="btn second petit">Changer</button></span>
+              </div>
+            </div>
+            <div class="boutons">
+              <button class="btn"><svg><use href="#i-ok"/></svg>Enregistrer</button>
+              <button class="btn second"><svg><use href="#i-pause"/></svg>Mettre en pause</button>
+              <button class="btn danger"><svg><use href="#i-poubelle"/></svg>Supprimer</button>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <footer class="bas">
+        <span class="bas-g"><span class="exemple">Exemple</span>abonnement inventé pour la maquette</span>
+        <div class="aides"><span class="aide"><i>B</i>Retour</span><span class="aide"><i>A</i>OK</span></div>
+      </footer>
+    </div>
+  </section>
+</div>
+
+<script>
+// Les pastilles et les choix réagissent au clic (maquette : rien n'est enregistré)
+document.querySelectorAll('.rayons, .choix-p').forEach(g => g.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  g.querySelectorAll('button').forEach(x => x.classList.toggle('oui', x === b));
+}));
+document.querySelectorAll('.bascule').forEach(b => b.addEventListener('click', () => b.classList.toggle('oui')));
+</script>

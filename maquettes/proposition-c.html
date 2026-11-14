@@ -1,0 +1,635 @@
+<title>Paymind proposition C</title>
+<style>
+:root {
+  color-scheme: dark;
+  --fond: #06050F; --fond2: #0C0920; --carte: rgba(16, 13, 38, 0.82); --carte2: rgba(28, 23, 62, 0.9); --ligne: #2A2450;
+  --texte: #ECEAF7; --doux: #A9A3C9; --pale: #6F6894;
+  --A: #22E07A; --P: #00E5FF; --S: #B04BFF; --orange: #FFB020; --rouge: #FF5C7A;
+  --vide: color-mix(in srgb, var(--ligne) 50%, var(--fond2));
+  --r: 20px;
+  --police: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --titre: "Exo 2", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--fond); color: var(--texte); font-family: var(--police); overflow-x: hidden; }
+body { padding: 28px 16px 60px; }
+button, input { font: inherit; color: inherit; }
+button { border: 0; background: none; cursor: pointer; padding: 0; text-align: inherit; }
+button:focus { outline: none; }
+button:focus-visible, input:focus-visible { box-shadow: 0 0 0 2px var(--fond), 0 0 0 4px var(--A); }
+@property --a-tour { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes tourne { to { --a-tour: 360deg; } }
+
+/* ------------------------------------------------ la page de présentation */
+.entete-page { max-width: 1280px; margin: 0 auto 26px; }
+.entete-page h1 { font-family: var(--titre); font-size: 26px; margin: 0 0 6px; font-weight: 800; }
+.entete-page p { margin: 0; color: var(--doux); font-size: 15px; line-height: 1.5; max-width: 820px; }
+.legende-ecran { max-width: 1280px; margin: 36px auto 12px; font-family: var(--titre); font-size: 19px; font-weight: 700; color: var(--texte); }
+.legende-ecran span { color: var(--A); margin-right: 6px; }
+
+/* ------------------------------------------------ la fenêtre d'appli */
+.fenetre { position: relative; max-width: 1280px; height: 760px; margin: 0 auto; border-radius: 18px; overflow: hidden; border: 1px solid var(--ligne);
+  display: flex; flex-direction: column;
+  background: radial-gradient(1100px 560px at 50% 125%, color-mix(in srgb, var(--A) 11%, transparent), transparent 60%),
+              radial-gradient(800px 460px at -10% -20%, color-mix(in srgb, var(--P) 8%, transparent), transparent 60%), var(--fond);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55); }
+.haut { flex: 0 0 64px; padding: 0 22px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--ligne); background: color-mix(in srgb, var(--fond) 82%, transparent); }
+.marque { display: flex; align-items: center; gap: 10px; margin-right: 14px; white-space: nowrap; }
+.marque svg { width: 38px; height: 38px; flex: none; }
+.marque b { font-family: var(--titre); font-size: 20px; font-weight: 800; }
+.onglets { display: flex; gap: 6px; min-width: 0; overflow: hidden; }
+.onglet { font-size: 14px; color: var(--doux); border: 1px solid var(--ligne); border-radius: 999px; padding: 7px 14px; white-space: nowrap; transition: all 180ms ease; }
+.onglet:hover { color: var(--texte); border-color: color-mix(in srgb, var(--A) 60%, var(--ligne)); }
+.onglet.actif { color: #fff; border-color: var(--A); background: color-mix(in srgb, var(--A) 18%, transparent); }
+.ronds { margin-left: auto; display: flex; gap: 8px; align-items: center; flex: none; }
+.rond { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--ligne); display: grid; place-items: center; color: var(--doux); transition: all 180ms ease; }
+.rond svg { width: 19px; height: 19px; }
+.rond:hover { color: var(--A); border-color: color-mix(in srgb, var(--A) 60%, var(--ligne)); background: color-mix(in srgb, var(--A) 12%, transparent); }
+.heure { margin-left: 10px; font-size: 15px; color: var(--doux); font-variant-numeric: tabular-nums; }
+.exemple { font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; color: var(--pale); border: 1px dashed var(--ligne); border-radius: 99px; padding: 3px 10px; margin-right: 6px; }
+
+.ecran { flex: 1; min-height: 0; padding: 22px 22px 58px; }
+.bas { position: absolute; left: 0; right: 0; bottom: 0; height: 50px; padding: 0 26px; display: flex; align-items: center; justify-content: space-between; }
+.bas-g { font-size: 13px; color: var(--pale); }
+.aides { display: flex; gap: 18px; }
+.aide { display: flex; align-items: center; gap: 7px; font-size: 15px; }
+.aide i { min-width: 26px; height: 26px; padding: 0 8px; border-radius: 7px; background: linear-gradient(180deg, #FFFFFF, #CFCDE0); color: #14102A; font-style: normal; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+
+/* ------------------------------------------------ bord de plasma (vert de l'appli) */
+.plasma { position: relative; border-radius: var(--r); background: var(--carte); isolation: isolate; }
+.plasma::before { content: ""; position: absolute; inset: -1.5px; border-radius: inherit; padding: 1.5px; pointer-events: none;
+  background: conic-gradient(from var(--a-tour), var(--A), var(--P), var(--S), var(--A));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: tourne 8s linear infinite; opacity: 0.95; }
+.plasma::after { content: ""; position: absolute; inset: -4px; border-radius: inherit; padding: 4px; pointer-events: none; z-index: -1; filter: blur(10px);
+  background: conic-gradient(from var(--a-tour), var(--A), var(--P), var(--S), var(--A));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: tourne 8s linear infinite; opacity: 0.4; }
+.plaque { border-radius: 16px; background: var(--carte); border: 1px solid var(--ligne); }
+
+/* ------------------------------------------------ module déplié */
+.deplie { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 22px; height: 100%; }
+.module { padding: 22px 22px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; min-height: 0; }
+.module h2 { font-family: var(--titre); margin: 0 0 4px; font-size: 21px; font-weight: 700; }
+.module .sous { margin: 0; color: var(--doux); font-size: 14px; line-height: 1.45; }
+.contenu { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.titre-zone { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.titre-zone h3 { font-family: var(--titre); font-size: 20px; margin: 0; font-weight: 700; }
+.titre-zone .compte { color: var(--doux); font-size: 14px; }
+
+.pastilles { display: flex; gap: 8px; flex-wrap: wrap; }
+.pastilles button { font-size: 14px; font-weight: 700; color: var(--doux); background: rgba(255,255,255,0.06); padding: 8px 16px; border-radius: 99px; transition: background 180ms ease, color 180ms ease; }
+.pastilles button:hover { color: var(--texte); background: rgba(255,255,255,0.11); }
+.pastilles button.oui { color: #04140B; background: linear-gradient(90deg, var(--A), #7CF5B5); }
+
+/* ------------------------------------------------ 1. le compteur */
+.compteur { position: relative; width: 236px; height: 236px; margin: 14px 0 6px; }
+.compteur svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.compteur .graduation { stroke: var(--ligne); }
+.compteur .part { fill: none; stroke-width: 15; animation: pousse 700ms cubic-bezier(.2,.9,.3,1) both; transition: stroke-width 180ms ease, opacity 180ms ease; }
+@keyframes pousse { from { opacity: 0; stroke-width: 0; } }
+.compteur.survol .part { opacity: 0.35; }
+.compteur.survol .part.vu { opacity: 1; stroke-width: 19; }
+.compteur .centre { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.compteur .centre small { font-size: 13px; color: var(--doux); text-transform: uppercase; letter-spacing: 0.08em; }
+.compteur .centre b { font-family: var(--titre); font-size: 31px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.compteur .centre span { font-size: 15px; color: var(--doux); }
+.par-an { display: flex; align-items: baseline; gap: 8px; padding: 8px 16px; border-radius: 12px; background: rgba(255,255,255,0.05); margin-bottom: 14px; }
+.par-an b { font-family: var(--titre); font-size: 22px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+.par-an span { color: var(--doux); font-size: 15px; }
+.parts { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; grid-template-columns: 1fr; gap: 2px; text-align: left; }
+.parts li { display: flex; align-items: center; gap: 9px; font-size: 14px; color: var(--doux); padding: 3px 4px; border-radius: 8px; min-width: 0; cursor: default; }
+.parts li:hover { background: rgba(255,255,255,0.06); color: var(--texte); }
+.parts li i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.parts li em { font-style: normal; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.parts li u { text-decoration: none; color: var(--pale); font-size: 13px; font-variant-numeric: tabular-nums; width: 40px; text-align: right; }
+.parts li b { width: 74px; text-align: right; color: var(--texte); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------ 1. la liste de bord */
+.voyants-legende { display: flex; gap: 16px; font-size: 13px; color: var(--doux); }
+.voyants-legende span { display: flex; align-items: center; gap: 6px; }
+.barre-tri { display: flex; align-items: center; gap: 10px; margin-left: 14px; }
+.barre-tri .lbl { color: var(--doux); font-size: 14px; }
+.entetes, .rang { display: grid; grid-template-columns: 42px minmax(0, 1.5fr) 110px 128px 128px 112px; align-items: center; gap: 12px; }
+.entetes { padding: 0 14px 6px; font-size: 12px; color: var(--pale); text-transform: uppercase; letter-spacing: 0.06em; }
+.liste { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; scrollbar-width: none; min-height: 0; }
+.rang { min-height: 40px; padding: 3px 14px; border-radius: 13px; background: var(--carte); border: 1px solid transparent; transition: border-color 160ms ease, background 160ms ease; cursor: pointer; }
+.rang:hover { border-color: color-mix(in srgb, var(--A) 55%, var(--ligne)); background: var(--carte2); }
+.rang.pause { opacity: 0.6; }
+.picto { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 18%, var(--fond2)); color: var(--c); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
+.picto svg { width: 19px; height: 19px; }
+.rang .nom { min-width: 0; }
+.rang .nom b { display: block; font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rang .nom span { font-size: 13px; color: var(--doux); }
+.rang .rythme { font-size: 14px; color: var(--doux); }
+.rang .prix { text-align: right; }
+.rang .prix b { display: block; font-size: 16px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+.rang .prix span { font-size: 12px; color: var(--doux); white-space: nowrap; }
+.rang .date b { display: block; font-size: 14.5px; font-weight: 600; }
+.rang .date span { font-size: 12.5px; color: var(--doux); }
+.rang .date.proche span { color: var(--orange); font-weight: 700; }
+.voyant { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--doux); white-space: nowrap; }
+.feu { width: 12px; height: 12px; border-radius: 50%; flex: none; background: var(--c); box-shadow: 0 0 8px var(--c), inset 0 -2px 3px rgba(0,0,0,0.35); }
+.feu.vert { --c: var(--A); } .feu.orange { --c: var(--orange); animation: clignote 2.2s ease-in-out infinite; } .feu.gris { --c: #6E6A86; box-shadow: inset 0 -2px 3px rgba(0,0,0,0.35); }
+@keyframes clignote { 50% { opacity: 0.45; } }
+.entre { animation: entre 360ms cubic-bezier(.2,.9,.3,1) both; }
+@keyframes entre { from { opacity: 0; transform: translateY(6px); } }
+
+/* ------------------------------------------------ 2. le catalogue */
+.icone-g { width: 132px; height: 132px; border-radius: 34px; display: grid; place-items: center; margin: 26px 0 18px; background: color-mix(in srgb, var(--A) 12%, var(--fond2)); border: 1px solid color-mix(in srgb, var(--A) 45%, transparent); color: var(--A); }
+.icone-g svg { width: 68px; height: 68px; }
+.bouton { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 22px; border-radius: 14px; font-size: 16px; font-weight: 700; transition: background 180ms ease, transform 180ms ease; }
+.bouton svg { width: 20px; height: 20px; }
+.bouton.plein { background: var(--A); color: #04140B; }
+.bouton.plein:hover { background: #5AF0A0; }
+.bouton.creux { border: 1px solid var(--ligne); background: rgba(255,255,255,0.04); }
+.bouton.creux:hover { background: rgba(255,255,255,0.09); }
+.bouton.danger { border: 1px solid color-mix(in srgb, var(--rouge) 55%, transparent); color: var(--rouge); background: color-mix(in srgb, var(--rouge) 8%, transparent); }
+.bouton.danger:hover { background: color-mix(in srgb, var(--rouge) 16%, transparent); }
+.module .bouton { width: 100%; margin-top: 18px; }
+.module .note { margin-top: auto; font-size: 13px; color: var(--pale); line-height: 1.45; }
+.recherche { display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 18px; border-radius: 16px; border: 2px solid color-mix(in srgb, var(--A) 60%, var(--ligne)); background: var(--fond2); margin-bottom: 14px; }
+.recherche svg { width: 22px; height: 22px; color: var(--A); flex: none; }
+.recherche input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; font-size: 17px; outline: none; }
+.recherche input::placeholder { color: var(--pale); }
+.contenu .pastilles { margin-bottom: 14px; }
+.contenu .pastilles button { padding: 7px 14px; font-size: 13.5px; }
+.grille { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-content: start; }
+.tuile { display: flex; align-items: center; gap: 12px; padding: 10px 12px; min-height: 68px; border-radius: 14px; background: var(--carte); border: 1px solid var(--ligne); text-align: left; transition: border-color 160ms ease, transform 160ms ease, background 160ms ease; }
+.tuile:hover { border-color: var(--A); background: var(--carte2); transform: translateY(-2px); }
+.tuile .ini { width: 42px; height: 42px; border-radius: 11px; flex: none; display: grid; place-items: center; font-family: var(--titre); font-weight: 800; font-size: 18px; color: #fff; background: linear-gradient(150deg, color-mix(in srgb, var(--c) 70%, var(--fond2)), color-mix(in srgb, var(--c) 25%, var(--fond2))); }
+.tuile .ini svg { width: 21px; height: 21px; }
+.tuile .t { min-width: 0; flex: 1; }
+.tuile b { display: block; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tuile span { font-size: 12.5px; color: var(--doux); white-space: nowrap; }
+.tuile .deja { display: inline-flex; align-items: center; gap: 4px; color: var(--A); font-weight: 700; }
+.tuile .deja svg { width: 12px; height: 12px; }
+.vide-msg { grid-column: 1 / -1; color: var(--doux); padding: 18px; text-align: center; }
+
+/* ------------------------------------------------ 3. la fiche */
+.fiche-prix { margin: 4px 0 4px; }
+.fiche-prix b { display: block; font-family: var(--titre); font-size: 38px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.fiche-prix span { color: var(--doux); font-size: 16px; }
+.fiche-an { margin-top: 10px; padding: 8px 16px; border-radius: 12px; background: rgba(255,255,255,0.05); font-size: 15px; color: var(--doux); }
+.fiche-an b { color: #fff; font-variant-numeric: tabular-nums; }
+.echeance { margin-top: 16px; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--ligne); font-size: 14px; color: var(--doux); text-align: left; }
+.echeance .feu { flex: none; }
+.echeance b { color: var(--texte); }
+.reglages { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 14px; height: 100%; }
+.col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.reglage { padding: 14px 16px; }
+.reglage h4 { margin: 0 0 10px; font-size: 13px; color: var(--doux); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700; }
+.saisie-prix { display: flex; align-items: center; gap: 10px; }
+.saisie-prix .champ { flex: 1; display: flex; align-items: center; justify-content: space-between; height: 58px; padding: 0 18px; border-radius: 14px; background: var(--fond2); border: 2px solid color-mix(in srgb, var(--A) 55%, var(--ligne)); }
+.saisie-prix .champ b { font-family: var(--titre); font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.saisie-prix .champ span { color: var(--doux); font-size: 14px; }
+.pm { width: 52px; height: 52px; border-radius: 14px; border: 1px solid var(--ligne); background: rgba(255,255,255,0.05); display: grid; place-items: center; font-size: 26px; font-weight: 700; transition: background 160ms ease; }
+.pm:hover { background: rgba(255,255,255,0.12); }
+.reglage .aide-txt { margin: 8px 0 0; font-size: 13.5px; color: var(--doux); }
+.reglage .aide-txt b { color: var(--texte); }
+.rythmes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.rythmes button { min-height: 46px; border-radius: 12px; font-size: 14.5px; font-weight: 700; color: var(--doux); background: rgba(255,255,255,0.06); text-align: center; transition: background 160ms ease, color 160ms ease; }
+.rythmes button:hover { background: rgba(255,255,255,0.12); color: var(--texte); }
+.rythmes button.oui { color: #04140B; background: var(--A); }
+.bascule { display: flex; align-items: center; gap: 14px; padding: 12px 16px; }
+.bascule .t { flex: 1; min-width: 0; }
+.bascule .t b { display: block; font-size: 15.5px; }
+.bascule .t span { font-size: 13px; color: var(--doux); }
+.inter { position: relative; width: 64px; height: 34px; border-radius: 99px; background: var(--vide); border: 1px solid var(--ligne); flex: none; transition: background 200ms ease; }
+.inter::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #CFCDE0; transition: transform 220ms cubic-bezier(.2,.9,.3,1), background 200ms ease; }
+.inter.oui { background: color-mix(in srgb, var(--A) 35%, var(--fond2)); border-color: var(--A); }
+.inter.oui::after { transform: translateX(30px); background: var(--A); box-shadow: 0 0 10px color-mix(in srgb, var(--A) 70%, transparent); }
+.inter-txt { font-size: 14px; font-weight: 700; width: 30px; text-align: right; color: var(--doux); }
+.cal-tete { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cal-tete b { font-size: 16px; }
+.cal-tete button { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--ligne); display: grid; place-items: center; color: var(--doux); }
+.cal-tete button:hover { color: var(--texte); background: rgba(255,255,255,0.08); }
+.cal-tete svg { width: 16px; height: 16px; }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
+.cal .j { font-size: 11.5px; color: var(--pale); padding-bottom: 3px; font-weight: 700; }
+.cal button { height: 32px; border-radius: 9px; font-size: 14px; text-align: center; font-variant-numeric: tabular-nums; transition: background 140ms ease; }
+.cal button:hover { background: rgba(255,255,255,0.1); }
+.cal button.oui { background: var(--A); color: #04140B; font-weight: 800; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.actions .bouton { width: 100%; padding: 0 12px; }
+.actions .bouton.plein { grid-column: 1 / -1; }
+
+/* ------------------------------------------------ téléphone et petits écrans */
+@media (max-width: 1100px) {
+  .entetes, .rang { grid-template-columns: 42px minmax(0, 1fr) 118px 118px 100px; }
+  .entetes .c-rythme, .rang .rythme { display: none; }
+  .grille { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .fenetre { height: auto; }
+  .ecran { padding: 16px 14px 64px; }
+  .deplie, .reglages { grid-template-columns: minmax(0, 1fr); height: auto; }
+  .haut { padding: 0 12px; }
+  .onglets, .heure { display: none; }
+  .ronds .rond:nth-child(n+3) { display: none; }
+  .voyants-legende { display: none; }
+  .entetes { display: none; }
+  .rang { grid-template-columns: 40px minmax(0, 1fr) auto; grid-template-areas: "ic nom prix" "ic date voyant"; row-gap: 2px; padding: 8px 12px; }
+  .rang .picto { grid-area: ic; } .rang .nom { grid-area: nom; } .rang .prix { grid-area: prix; } .rang .date { grid-area: date; } .rang .voyant { grid-area: voyant; justify-content: flex-end; }
+  .rang .date b, .rang .date span { display: inline; margin-right: 6px; }
+  .grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .barre-tri { flex-wrap: wrap; }
+  .actions { margin-top: 4px; }
+}
+@media (max-width: 520px) {
+  .grille, .actions { grid-template-columns: minmax(0, 1fr); }
+  .rythmes { grid-template-columns: 1fr 1fr; }
+  .bas { padding: 0 14px; } .bas-g { display: none; } .aides { margin-left: auto; }
+  .exemple { display: none; }
+  .titre-zone { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700;800&display=swap" rel="stylesheet">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="13" rx="2.5"/><path d="M10 8.5v5l4.5-2.5z" fill="currentColor"/><path d="M8 21h8"/></symbol>
+    <symbol id="i-musique" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></symbol>
+    <symbol id="i-jeux" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 7h11a4 4 0 0 1 4 4.3l-.5 5.2a2.6 2.6 0 0 1-4.6 1.4L14.5 16h-5l-1.9 1.9A2.6 2.6 0 0 1 3 16.5l-.5-5.2A4 4 0 0 1 6.5 7z"/><path d="M7.5 10.5v3M6 12h3"/><circle cx="16" cy="11" r="0.6" fill="currentColor"/><circle cx="17.5" cy="13" r="0.6" fill="currentColor"/></symbol>
+    <symbol id="i-tel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18.5h2"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 16.5h.01M11 16.5h.01"/><path d="M8.5 9.5a5 5 0 0 1 7 0M6 7a8.5 8.5 0 0 1 12 0"/></symbol>
+    <symbol id="i-assur" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l8 3v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10v-6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-voiture" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11l1.8-4.6A2 2 0 0 1 8.7 5h6.6a2 2 0 0 1 1.9 1.4L19 11"/><rect x="3" y="11" width="18" height="6" rx="2"/><path d="M5.5 17v2M18.5 17v2"/><circle cx="7.5" cy="14" r="1" fill="currentColor"/><circle cx="16.5" cy="14" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-maison" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></symbol>
+    <symbol id="i-sante" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5s-8-4.6-8-10.4A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 8 2.6c0 5.8-8 10.4-8 10.4z"/><path d="M12 10.5v5M9.5 13h5"/></symbol>
+    <symbol id="i-sport" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></symbol>
+    <symbol id="i-presse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h13v14a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2z"/><path d="M17 8.5h3v10a2 2 0 0 1-2 2"/><path d="M7.5 8.5h6M7.5 12h6M7.5 15.5h4"/></symbol>
+    <symbol id="i-logiciel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="16" rx="2.5"/><path d="M2.5 8.5h19M6 6.3h.01M8.5 6.3h.01"/><path d="M9 13l-2 2 2 2M15 13l2 2-2 2"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-loupe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5L16 16"/></symbol>
+    <symbol id="i-reglages" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v2.5M12 19v2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M2.5 12H5M19 12h2.5M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></symbol>
+    <symbol id="i-aide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.3-2.5 3.8"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-cloche" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 5.5v13M15 5.5v13"/></symbol>
+    <symbol id="i-poubelle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16M9.5 6.5V4h5v2.5M6.5 6.5l1 13.5h9l1-13.5"/></symbol>
+    <symbol id="i-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-g" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-d" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-moi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5L9 20H4v-5z"/><path d="M12.5 6.5l5 5"/></symbol>
+    <symbol id="logo" viewBox="0 0 40 40"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22E07A"/><stop offset="1" stop-color="#00B8D9"/></linearGradient></defs><rect x="2" y="7" width="36" height="26" rx="7" fill="url(#lg)"/><rect x="2" y="13" width="36" height="5" fill="#06301A" opacity="0.55"/><rect x="7" y="23" width="11" height="4" rx="2" fill="#04140B" opacity="0.7"/><circle cx="30" cy="25" r="3.2" fill="#04140B" opacity="0.7"/></symbol>
+  </defs>
+</svg>
+
+<header class="entete-page">
+  <h1>Paymind, proposition C : le tableau de bord de cockpit</h1>
+  <p>La version la plus calme : un grand compteur pour savoir combien je paie, une liste de bord avec un voyant par abonnement, et des réglages à grosses commandes. Les abonnements et les prix montrés sont des exemples.</p>
+</header>
+
+<!-- ============================================================ 1. ACCUEIL -->
+<div class="legende-ecran"><span>1.</span>Accueil : mon bilan</div>
+<section class="fenetre" aria-label="Accueil de Paymind">
+  <div class="haut">
+    <div class="marque"><svg><use href="#logo"/></svg><b>Paymind</b></div>
+    <nav class="onglets"><button class="onglet actif">Mon bilan</button><button class="onglet">Ajouter</button><button class="onglet">Rappels</button></nav>
+    <div class="ronds">
+      <span class="exemple">EXEMPLE</span>
+      <button class="rond" title="Rechercher"><svg><use href="#i-loupe"/></svg></button>
+      <button class="rond" title="Réglages"><svg><use href="#i-reglages"/></svg></button>
+      <button class="rond" title="Aide"><svg><use href="#i-aide"/></svg></button>
+      <span class="heure">14:32</span>
+    </div>
+  </div>
+  <div class="ecran">
+    <div class="deplie">
+      <aside class="module plasma">
+        <h2>Ce que je paie</h2>
+        <p class="sous">Tout compris, ramené au mois</p>
+        <div class="compteur" id="compteur">
+          <svg viewBox="0 0 120 120" id="anneau"></svg>
+          <div class="centre"><small>Par mois</small><b id="totalMois">0 €</b><span id="nbAbos"></span></div>
+        </div>
+        <div class="par-an"><b id="totalAn">0 €</b><span>par an</span></div>
+        <ul class="parts" id="parts"></ul>
+      </aside>
+      <div class="contenu">
+        <div class="titre-zone">
+          <h3>Liste de bord</h3>
+        <div class="barre-tri">
+          <span class="lbl">Trier :</span>
+          <div class="pastilles" id="tri">
+            <button class="oui" data-tri="date">Par date</button>
+            <button data-tri="prix">Par prix</button>
+            <button data-tri="cat">Par catégorie</button>
+          </div>
+        </div>
+        </div>
+        <div class="entetes"><span></span><span>Abonnement</span><span class="c-rythme">Rythme</span><span style="text-align:right">Par mois</span><span>Prochain paiement</span><span>Voyant</span></div>
+        <div class="liste" id="liste"></div>
+      </div>
+    </div>
+  </div>
+  <div class="bas"><div class="voyants-legende bas-g">
+            <span><i class="feu vert"></i>Se renouvelle tout seul</span>
+            <span><i class="feu orange"></i>Dans moins de 7 jours</span>
+            <span><i class="feu gris"></i>En pause</span>
+          </div><div class="aides"><span class="aide"><i>B</i>Retour</span><span class="aide"><i>A</i>OK</span></div></div>
+</section>
+
+<!-- ============================================================ 2. AJOUTER -->
+<div class="legende-ecran"><span>2.</span>Ajouter un abonnement</div>
+<section class="fenetre" aria-label="Ajouter un abonnement">
+  <div class="haut">
+    <div class="marque"><svg><use href="#logo"/></svg><b>Paymind</b></div>
+    <nav class="onglets"><button class="onglet">Mon bilan</button><button class="onglet actif">Ajouter</button><button class="onglet">Rappels</button></nav>
+    <div class="ronds">
+      <span class="exemple">EXEMPLE</span>
+      <button class="rond" title="Rechercher"><svg><use href="#i-loupe"/></svg></button>
+      <button class="rond" title="Réglages"><svg><use href="#i-reglages"/></svg></button>
+      <button class="rond" title="Aide"><svg><use href="#i-aide"/></svg></button>
+      <span class="heure">14:33</span>
+    </div>
+  </div>
+  <div class="ecran">
+    <div class="deplie">
+      <aside class="module plasma">
+        <h2>Ajouter un abonnement</h2>
+        <p class="sous">Choisissez dans la liste : le prix habituel est déjà rempli. Vous pourrez le corriger ensuite.</p>
+        <div class="icone-g"><svg><use href="#i-plus"/></svg></div>
+        <p class="sous">Il n'est pas dans la liste ?</p>
+        <button class="bouton plein"><svg><use href="#i-moi"/></svg>Un abonnement à moi</button>
+        <p class="note">Vous tapez son nom et son prix, c'est tout.<br>Rien n'est envoyé sur Internet : tout reste sur ce PC.</p>
+      </aside>
+      <div class="contenu">
+        <label class="recherche"><svg><use href="#i-loupe"/></svg><input id="cherche" type="text" placeholder="Chercher un nom : Netflix, mutuelle, box..." autocomplete="off"></label>
+        <div class="pastilles" id="cats"></div>
+        <div class="grille" id="grille"></div>
+      </div>
+    </div>
+  </div>
+  <div class="bas"><span class="bas-g">Cliquez sur un abonnement pour l'ajouter</span><div class="aides"><span class="aide"><i>B</i>Retour</span><span class="aide"><i>A</i>OK</span></div></div>
+</section>
+
+<!-- ============================================================ 3. LA FICHE -->
+<div class="legende-ecran"><span>3.</span>La fiche d'un abonnement</div>
+<section class="fenetre" aria-label="Fiche d'un abonnement">
+  <div class="haut">
+    <div class="marque"><svg><use href="#logo"/></svg><b>Paymind</b></div>
+    <nav class="onglets"><button class="onglet actif">Mon bilan</button><button class="onglet">Ajouter</button><button class="onglet">Rappels</button></nav>
+    <div class="ronds">
+      <span class="exemple">EXEMPLE</span>
+      <button class="rond" title="Rechercher"><svg><use href="#i-loupe"/></svg></button>
+      <button class="rond" title="Réglages"><svg><use href="#i-reglages"/></svg></button>
+      <button class="rond" title="Aide"><svg><use href="#i-aide"/></svg></button>
+      <span class="heure">14:34</span>
+    </div>
+  </div>
+  <div class="ecran">
+    <div class="deplie">
+      <aside class="module plasma">
+        <h2>Assurance voiture</h2>
+        <p class="sous">Assurances</p>
+        <div class="icone-g" style="--A:#22E07A"><svg><use href="#i-voiture"/></svg></div>
+        <div class="fiche-prix"><b id="ficheMois">54,08 €</b><span>par mois</span></div>
+        <div class="fiche-an">Soit <b id="ficheAn">649,00 €</b> par an</div>
+        <div class="echeance"><i class="feu vert"></i><span>Prochain paiement le <b>15 janvier 2027</b>, dans 62 jours</span></div>
+      </aside>
+      <div class="contenu">
+        <div class="reglages">
+          <div class="col">
+            <div class="reglage plaque">
+              <h4>Prix</h4>
+              <div class="saisie-prix">
+                <button class="pm" id="moins" title="Moins cher">&minus;</button>
+                <div class="champ"><b id="prixChamp">649,00 €</b><span id="prixRythme">par an</span></div>
+                <button class="pm" id="plus" title="Plus cher">+</button>
+              </div>
+              <p class="aide-txt">Soit <b id="aideMois">54,08 €</b> par mois dans mon bilan.</p>
+            </div>
+            <div class="reglage plaque">
+              <h4>Je paie</h4>
+              <div class="rythmes" id="rythmes">
+                <button data-r="52">Par semaine</button>
+                <button data-r="12">Par mois</button>
+                <button data-r="4">Par trimestre</button>
+                <button data-r="1" class="oui">Par an</button>
+              </div>
+            </div>
+            <div class="reglage plaque bascule">
+              <div class="t"><b>Renouvellement automatique</b><span>Il repart tout seul chaque année</span></div>
+              <span class="inter-txt">Oui</span><button class="inter oui" aria-label="Renouvellement automatique"></button>
+            </div>
+            <div class="reglage plaque bascule">
+              <div class="t"><b>Me prévenir 7 jours avant</b><span>Une bulle près de l'horloge</span></div>
+              <span class="inter-txt">Oui</span><button class="inter oui" aria-label="Me prévenir 7 jours avant"></button>
+            </div>
+          </div>
+          <div class="col">
+            <div class="reglage plaque">
+              <h4>Prochain paiement</h4>
+              <div class="cal-tete"><button title="Mois d'avant"><svg><use href="#i-g"/></svg></button><b>Janvier 2027</b><button title="Mois d'après"><svg><use href="#i-d"/></svg></button></div>
+              <div class="cal" id="cal"></div>
+            </div>
+            <div class="actions">
+              <button class="bouton creux"><svg><use href="#i-pause"/></svg>Mettre en pause</button>
+              <button class="bouton danger"><svg><use href="#i-poubelle"/></svg>Supprimer</button>
+              <button class="bouton plein"><svg><use href="#i-ok"/></svg>Enregistrer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bas"><span class="bas-g">Les changements comptent dans le bilan dès que vous enregistrez</span><div class="aides"><span class="aide"><i>B</i>Retour</span><span class="aide"><i>A</i>OK</span></div></div>
+</section>
+
+<script>
+(function () {
+  var reduit = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var euro = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
+  var e = function (n) { return euro.format(n); };
+
+  var CATS = {
+    "Vidéo": { c: "#FF5C7A", i: "i-video" },
+    "Musique": { c: "#B04BFF", i: "i-musique" },
+    "Jeux": { c: "#00E5FF", i: "i-jeux" },
+    "Téléphone et Internet": { c: "#4D8DFF", i: "i-tel" },
+    "Assurances": { c: "#22E07A", i: "i-assur" },
+    "Santé": { c: "#FF8AD8", i: "i-sante" },
+    "Sport": { c: "#FF8A3D", i: "i-sport" },
+    "Presse": { c: "#FFE066", i: "i-presse" },
+    "Logiciels": { c: "#9AA3FF", i: "i-logiciel" }
+  };
+  var RYTHME = { 52: "Par semaine", 12: "Par mois", 4: "Par trimestre", 1: "Par an" };
+  var RYTHME_COURT = { 52: "par semaine", 12: "par mois", 4: "par trimestre", 1: "par an" };
+
+  /* Exemple : la liste d'une personne au 14 novembre 2026 */
+  var ABOS = [
+    { nom: "Netflix", cat: "Vidéo", prix: 13.49, r: 12, date: "5 déc.", j: 21 },
+    { nom: "Spotify", cat: "Musique", prix: 11.12, r: 12, date: "18 nov.", j: 4 },
+    { nom: "Amazon Prime", cat: "Vidéo", prix: 69.90, r: 1, date: "2 mars 2027", j: 108 },
+    { nom: "World of Warcraft", cat: "Jeux", prix: 12.99, r: 12, date: "20 nov.", j: 6 },
+    { nom: "Dofus", cat: "Jeux", prix: 5.99, r: 12, pause: true },
+    { nom: "Forfait téléphone", cat: "Téléphone et Internet", prix: 9.99, r: 12, date: "2 déc.", j: 18, icone: "i-tel" },
+    { nom: "Box Internet", cat: "Téléphone et Internet", prix: 29.99, r: 12, date: "28 nov.", j: 14, icone: "i-box" },
+    { nom: "Assurance voiture", cat: "Assurances", prix: 649.00, r: 1, date: "15 janv. 2027", j: 62, icone: "i-voiture" },
+    { nom: "Assurance habitation", cat: "Assurances", prix: 16.40, r: 12, date: "1er déc.", j: 17, icone: "i-maison" },
+    { nom: "Mutuelle", cat: "Santé", prix: 96.00, r: 4, date: "1er janv. 2027", j: 48 },
+    { nom: "Journal du dimanche", cat: "Presse", prix: 2.30, r: 52, date: "22 nov.", j: 8 }
+  ];
+  ABOS.forEach(function (a) { a.mois = a.prix * a.r / 12; });
+
+  /* ---------- le compteur */
+  var actifs = ABOS.filter(function (a) { return !a.pause; });
+  var totalAn = actifs.reduce(function (s, a) { return s + a.prix * a.r; }, 0);
+  var totalMois = totalAn / 12;
+  document.getElementById("totalMois").textContent = e(totalMois);
+  document.getElementById("totalAn").textContent = e(totalAn);
+  document.getElementById("nbAbos").textContent = actifs.length + " abonnements";
+
+  var parCat = {};
+  actifs.forEach(function (a) { parCat[a.cat] = (parCat[a.cat] || 0) + a.mois; });
+  var cats = Object.keys(parCat).sort(function (x, y) { return parCat[y] - parCat[x]; });
+  var anneau = document.getElementById("anneau");
+  var R = 50, C = 2 * Math.PI * R, ecart = 1.6, deb = 0, svg = "";
+  for (var g = 0; g < 60; g++) {
+    var ang = g / 60 * 2 * Math.PI, r1 = 59, r2 = g % 5 === 0 ? 55.5 : 57;
+    svg += '<line class="graduation" stroke-width="' + (g % 5 === 0 ? 1.2 : 0.6) + '" x1="' + (60 + r1 * Math.cos(ang)).toFixed(2) + '" y1="' + (60 + r1 * Math.sin(ang)).toFixed(2) + '" x2="' + (60 + r2 * Math.cos(ang)).toFixed(2) + '" y2="' + (60 + r2 * Math.sin(ang)).toFixed(2) + '"/>';
+  }
+  svg += '<circle cx="60" cy="60" r="' + R + '" fill="none" stroke="var(--vide)" stroke-width="15"/>';
+  cats.forEach(function (c) {
+    var l = parCat[c] / totalMois * C;
+    svg += '<circle class="part" data-cat="' + c + '" cx="60" cy="60" r="' + R + '" stroke="' + CATS[c].c + '" stroke-dasharray="' + Math.max(l - ecart, 0.5).toFixed(2) + ' ' + C.toFixed(2) + '" stroke-dashoffset="' + (-deb).toFixed(2) + '" data-l="' + Math.max(l - ecart, 0.5).toFixed(2) + '"/>';
+    deb += l;
+  });
+  anneau.innerHTML = svg;
+  anneau.querySelectorAll(".part").forEach(function (p, k) { p.style.animationDelay = (150 + k * 110) + "ms"; });
+  var compteur = document.getElementById("compteur");
+  document.getElementById("parts").innerHTML = cats.map(function (c) {
+    return '<li data-cat="' + c + '" title="' + c + " : " + Math.round(parCat[c] / totalMois * 100) + ' % du total"><i style="background:' + CATS[c].c + '"></i><em>' + c + '</em><u>' + Math.round(parCat[c] / totalMois * 100) + ' %</u><b>' + e(parCat[c]) + '</b></li>';
+  }).join("");
+  document.querySelectorAll("#parts li").forEach(function (li) {
+    li.addEventListener("mouseenter", function () {
+      compteur.classList.add("survol");
+      anneau.querySelectorAll(".part").forEach(function (p) { p.classList.toggle("vu", p.getAttribute("data-cat") === li.getAttribute("data-cat")); });
+    });
+    li.addEventListener("mouseleave", function () { compteur.classList.remove("survol"); });
+  });
+
+  /* ---------- la liste de bord */
+  var liste = document.getElementById("liste");
+  function voyant(a) {
+    if (a.pause) return '<span class="voyant"><i class="feu gris"></i>En pause</span>';
+    if (a.j < 7) return '<span class="voyant"><i class="feu orange"></i>Bientôt</span>';
+    return '<span class="voyant"><i class="feu vert"></i>Auto</span>';
+  }
+  function rangee(a, k) {
+    var ic = a.icone || CATS[a.cat].i;
+    var sousPrix = a.r === 12 ? "par mois" : e(a.prix) + " " + RYTHME_COURT[a.r];
+    var date = a.pause ? '<div class="date"><b>Aucun</b><span>en pause</span></div>'
+      : '<div class="date' + (a.j < 7 ? " proche" : "") + '"><b>' + a.date + '</b><span>dans ' + a.j + ' jours</span></div>';
+    return '<div class="rang' + (a.pause ? " pause" : "") + (reduit ? "" : " entre") + '" style="animation-delay:' + (k * 35) + 'ms" tabindex="0">' +
+      '<span class="picto" style="--c:' + CATS[a.cat].c + '"><svg><use href="#' + ic + '"/></svg></span>' +
+      '<div class="nom"><b>' + a.nom + '</b><span>' + a.cat + '</span></div>' +
+      '<span class="rythme">' + RYTHME[a.r] + '</span>' +
+      '<div class="prix"><b>' + e(a.mois) + '</b><span>' + sousPrix + '</span></div>' +
+      date + voyant(a) + '</div>';
+  }
+  function trier(mode) {
+    var l = ABOS.slice();
+    if (mode === "date") l.sort(function (x, y) { return (x.pause ? 9999 : x.j) - (y.pause ? 9999 : y.j); });
+    if (mode === "prix") l.sort(function (x, y) { return y.mois - x.mois; });
+    if (mode === "cat") l.sort(function (x, y) { return x.cat.localeCompare(y.cat, "fr") || y.mois - x.mois; });
+    liste.innerHTML = l.map(rangee).join("");
+  }
+  trier("date");
+  document.querySelectorAll("#tri button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      document.querySelectorAll("#tri button").forEach(function (x) { x.classList.remove("oui"); });
+      b.classList.add("oui"); trier(b.getAttribute("data-tri"));
+    });
+  });
+
+  /* ---------- le catalogue (prix habituels livrés avec l'appli) */
+  var CATALOGUE = [
+    { nom: "Netflix", cat: "Vidéo", prix: 13.49, r: 12, deja: true },
+    { nom: "Disney+", cat: "Vidéo", prix: 9.99, r: 12 },
+    { nom: "Amazon Prime", cat: "Vidéo", prix: 69.90, r: 1, deja: true },
+    { nom: "Canal+", cat: "Vidéo", prix: 24.99, r: 12 },
+    { nom: "Spotify", cat: "Musique", prix: 11.12, r: 12, deja: true },
+    { nom: "Deezer", cat: "Musique", prix: 11.99, r: 12 },
+    { nom: "World of Warcraft", cat: "Jeux", prix: 12.99, r: 12, deja: true },
+    { nom: "Dofus", cat: "Jeux", prix: 5.99, r: 12, deja: true },
+    { nom: "Xbox Game Pass", cat: "Jeux", prix: 14.99, r: 12 },
+    { nom: "Forfait téléphone", cat: "Téléphone et Internet", prix: 9.99, r: 12, i: "i-tel", deja: true },
+    { nom: "Box Internet", cat: "Téléphone et Internet", prix: 29.99, r: 12, i: "i-box", deja: true },
+    { nom: "Assurance voiture", cat: "Assurances", i: "i-voiture", deja: true },
+    { nom: "Assurance habitation", cat: "Assurances", i: "i-maison", deja: true },
+    { nom: "Mutuelle", cat: "Santé", deja: true },
+    { nom: "Salle de sport", cat: "Sport", prix: 29.99, r: 12 },
+    { nom: "Journal quotidien", cat: "Presse", prix: 9.99, r: 12 },
+    { nom: "Magazine télé", cat: "Presse", prix: 4.50, r: 12 },
+    { nom: "Suite bureautique", cat: "Logiciels", prix: 99.00, r: 1 },
+    { nom: "Antivirus", cat: "Logiciels", prix: 39.99, r: 1 },
+    { nom: "Stockage en ligne", cat: "Logiciels", prix: 2.99, r: 12 }
+  ];
+  var catChoisie = "Tout";
+  var catsEl = document.getElementById("cats");
+  catsEl.innerHTML = ["Tout"].concat(Object.keys(CATS)).map(function (c) { return '<button' + (c === "Tout" ? ' class="oui"' : "") + ' data-c="' + c + '">' + c + '</button>'; }).join("");
+  var grille = document.getElementById("grille"), cherche = document.getElementById("cherche");
+  function sansAccent(s) { return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
+  function dessinerGrille() {
+    var q = sansAccent(cherche.value.trim());
+    var l = CATALOGUE.filter(function (x) {
+      return (catChoisie === "Tout" || x.cat === catChoisie) && (!q || sansAccent(x.nom + " " + x.cat).indexOf(q) >= 0);
+    }).slice(0, 16);
+    grille.innerHTML = l.length ? l.map(function (x, k) {
+      var ini = x.i ? '<svg><use href="#' + x.i + '"/></svg>' : x.nom.charAt(0);
+      var bas = x.deja ? '<span class="deja"><svg><use href="#i-ok"/></svg>Déjà dans ma liste</span>'
+        : x.prix ? '<span>' + e(x.prix) + " " + RYTHME_COURT[x.r] + '</span>' : '<span>Prix à remplir</span>';
+      return '<button class="tuile' + (reduit ? "" : " entre") + '" style="animation-delay:' + (k * 25) + 'ms"><span class="ini" style="--c:' + CATS[x.cat].c + '">' + ini + '</span><span class="t"><b>' + x.nom + '</b>' + bas + '</span></button>';
+    }).join("") : '<div class="vide-msg">Rien de ce nom. Essayez « Un abonnement à moi », à gauche.</div>';
+  }
+  CATALOGUE.sort(function (a, b) { return (a.deja ? 1 : 0) - (b.deja ? 1 : 0); });
+  dessinerGrille();
+  catsEl.addEventListener("click", function (ev) {
+    var b = ev.target.closest("button"); if (!b) return;
+    catsEl.querySelectorAll("button").forEach(function (x) { x.classList.remove("oui"); });
+    b.classList.add("oui"); catChoisie = b.getAttribute("data-c"); dessinerGrille();
+  });
+  cherche.addEventListener("input", dessinerGrille);
+
+  /* ---------- la fiche */
+  var cal = document.getElementById("cal");
+  var h = ["L", "M", "M", "J", "V", "S", "D"].map(function (j) { return '<span class="j">' + j + '</span>'; }).join("");
+  for (var v = 0; v < 4; v++) h += "<span></span>";
+  for (var d = 1; d <= 31; d++) h += '<button' + (d === 15 ? ' class="oui"' : "") + '>' + d + '</button>';
+  cal.innerHTML = h;
+  cal.addEventListener("click", function (ev) {
+    var b = ev.target.closest("button"); if (!b) return;
+    cal.querySelectorAll("button").forEach(function (x) { x.classList.remove("oui"); }); b.classList.add("oui");
+  });
+  var prix = 649, rythme = 1;
+  function majFiche() {
+    var m = prix * rythme / 12;
+    document.getElementById("prixChamp").textContent = e(prix);
+    document.getElementById("prixRythme").textContent = RYTHME_COURT[rythme];
+    document.getElementById("aideMois").textContent = e(m);
+    document.getElementById("ficheMois").textContent = e(m);
+    document.getElementById("ficheAn").textContent = e(prix * rythme);
+  }
+  document.getElementById("moins").addEventListener("click", function () { prix = Math.max(0, prix - 1); majFiche(); });
+  document.getElementById("plus").addEventListener("click", function () { prix += 1; majFiche(); });
+  document.querySelectorAll("#rythmes button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      document.querySelectorAll("#rythmes button").forEach(function (x) { x.classList.remove("oui"); });
+      b.classList.add("oui"); rythme = +b.getAttribute("data-r"); majFiche();
+    });
+  });
+  document.querySelectorAll(".inter").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var oui = b.classList.toggle("oui");
+      b.previousElementSibling.textContent = oui ? "Oui" : "Non";
+    });
+  });
+})();
+</script>
