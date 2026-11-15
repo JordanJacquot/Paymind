@@ -17,7 +17,7 @@ Les logos des marques restent la propriété de leurs marques ; ils servent seul
   prochain paiement qui avance seule après un renouvellement automatique, les totaux par catégorie, la liste « Bientôt » ;
   les abonnements gardés sur le PC avec une copie de secours. Vérifié par des tests sur les cas pièges (le 31 dans un
   mois de 30 jours, le 29 février, le passage d'année).
-- [ ] **3. Le portefeuille** : l'accueil de la maquette F (cartes, total par mois et par an, « Bientôt ») ;
+- [x] **3. Le portefeuille** : l'accueil de la maquette F (cartes, total par mois et par an, « Bientôt ») ;
   « Ajoute ton premier abonnement » quand la liste est vide. Vérifié par des captures comparées à la maquette.
 - [ ] **4. La liste toute prête** : environ 80 abonnements avec leur logo officiel et leur prix habituel (streaming,
   musique, jeux dont Dofus et World of Warcraft, opérateurs, banques et assurances dont Crédit Mutuel, sport, presse,
