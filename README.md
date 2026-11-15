@@ -22,7 +22,7 @@ Les logos des marques restent la propriété de leurs marques ; ils servent seul
 - [x] **4. La liste toute prête** : environ 80 abonnements avec leur logo officiel et leur prix habituel (streaming,
   musique, jeux dont Dofus et World of Warcraft, opérateurs, banques et assurances dont Crédit Mutuel, sport, presse,
   logiciels), la recherche et « Un abonnement à moi ». Vérifié : ajouter Netflix fait apparaître sa carte et change le total.
-- [ ] **5. La fiche** : prix, rythme, date, renouvellement automatique, pause, suppression ; le rappel au choix (jamais,
+- [x] **5. La fiche** : prix, rythme, date, renouvellement automatique, pause, suppression ; le rappel au choix (jamais,
   le jour même, la veille par défaut, 3 jours avant, 7 jours avant).
 - [ ] **6. Les rappels et la carte dans Mindset** : une bulle près de l'horloge au moment choisi (montrée au démarrage
   suivant si le PC était éteint) ; la carte de Mindset montre le total du mois et le prochain paiement.
