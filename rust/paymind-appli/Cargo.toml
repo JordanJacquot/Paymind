@@ -1,6 +1,6 @@
 [package]
 name = "paymind-appli"
-version = "0.1.0"
+version = "0.1.1"
 description = "Paymind en Rust : le programme (Mindset.exe dans le dossier de Paymind), sa fenêtre Tauri dans Mindset"
 edition.workspace = true
 license.workspace = true

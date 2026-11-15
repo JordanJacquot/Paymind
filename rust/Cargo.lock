@@ -2087,7 +2087,7 @@ dependencies = [
 
 [[package]]
 name = "paymind-appli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "paymind-donnees",
  "paymind-moteur",
