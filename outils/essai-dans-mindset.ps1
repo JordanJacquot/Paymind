@@ -272,7 +272,7 @@ try {
             $j = $bulle.Json
             Verifier (-not $bulle.Bom) 'notification.demande en UTF-8 sans BOM'
             Verifier ($j.titre -ceq "Netflix aujourd'hui : 13,49$nbsp€") "titre de la bulle : « $($j.titre) »"
-            Verifier ($j.texte -clike 'Paiement prévu le *.' -and $j.texte -notmatch '[–—]') "texte de la bulle : « $($j.texte) »"
+            Verifier ($j.texte -clike 'Paiement prévu le *.' -and $j.texte -notmatch '[\u2013\u2014]') "texte de la bulle : « $($j.texte) »"
             Verifier ($j.id -cmatch '^[0-9a-f]{12}$') "numéro de la bulle : $($j.id) (12 chiffres hexadécimaux)"
             Verifier ((Compter "Bulle envoyée ($($j.id))") -eq 1) 'bulle envoyée une fois (journal)'
             # Le clic sur la bulle : Mindset écrit « notif:<id> » dans afficher.demande
