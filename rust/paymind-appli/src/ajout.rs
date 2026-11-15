@@ -10,7 +10,7 @@
 //!   (etat.json) mise à jour.
 //!
 //! Un même abonnement peut être ajouté deux fois (deux comptes Netflix, deux box) : chacun a sa carte, et la liste
-//! toute prête le marque « Déjà là ». La fiche modifiable (prix, date...) vient à l'étape 5.
+//! toute prête le marque « Déjà là ». Le prix, la date et le reste se changent ensuite dans la fiche (src\fiche.rs).
 
 use paymind_donnees::Donnees;
 use paymind_moteur::abonnement::NOM_MAX;
@@ -209,6 +209,9 @@ pub fn nouvel_abonnement(ajout: &Ajout, liste: &[Abonnement], aujourdhui: Date) 
 /// jour la carte de Mindset (etat.json). Pas enregistré : la liste revient comme avant, et le refus est un texte
 /// simple pour la bulle de l'écran.
 pub fn ajouter(d: &mut Donnees, ajout: &Ajout, aujourdhui: Date) -> Result<Abonnement, String> {
+    if d.abonnements.plus_recente() {
+        return Err(crate::fiche::LISTE_PLUS_RECENTE.into());
+    }
     let a = nouvel_abonnement(ajout, &d.abonnements.liste, aujourdhui);
     d.abonnements.liste.push(a.clone());
     if let Err(e) = d.abonnements.sauver(&mut d.fichiers) {
@@ -421,7 +424,7 @@ mod tests {
         let mut dn = e.donnees();
         let ajout = lire(ACTION_LISTE, &json!("netflix")).unwrap();
         let r = ajouter(&mut dn, &ajout, d(2026, 11, 15));
-        assert_eq!(r.unwrap_err(), "Paymind n'a pas pu enregistrer ta liste. Réessaie dans un moment.");
+        assert_eq!(r.unwrap_err(), crate::fiche::LISTE_PLUS_RECENTE);
         assert!(dn.abonnements.liste.is_empty());
         assert!(e.lire("abonnements.json").contains("\"format\": 99"));
     }

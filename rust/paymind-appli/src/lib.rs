@@ -1,6 +1,6 @@
 //! Paymind en Rust : la fenêtre de Paymind dans Mindset et son programme. Repris de mindcare-appli : une page qui suit
-//! le thème, la vie avec Mindset, depuis l'étape 3 le portefeuille de la maquette F, et depuis l'étape 4 la liste
-//! toute prête.
+//! le thème, la vie avec Mindset, depuis l'étape 3 le portefeuille de la maquette F, depuis l'étape 4 la liste
+//! toute prête, et depuis l'étape 5 la fiche modifiable.
 //!
 //! - [`fenetre`] : la fenêtre « principale », créée dans le code (jamais dans tauri.conf.json), cachée et sans
 //!   prendre la main, titre exact « Paymind », dossier WebView2 et options du navigateur de suite-commun
@@ -8,8 +8,10 @@
 //! - [`commandes`] : les trois seules commandes que la page peut appeler (`suivre_page`, `noter_visibilite`,
 //!   `action`), déclarées dans build.rs et autorisées à la seule fenêtre « principale » (capabilities\principale.json) ;
 //! - [`ecran`] : ce que la page montre (l'état du kit d'écrans de la suite) ;
-//! - [`portefeuille`] : l'accueil de la maquette F (total, « Bientôt », cartes par catégorie, fiches en lecture
-//!   seule), préparé d'après la liste des abonnements et paymind-moteur, dessiné par ui\portefeuille.js ;
+//! - [`portefeuille`] : l'accueil de la maquette F (total, « Bientôt », cartes par catégorie et leurs fiches),
+//!   préparé d'après la liste des abonnements et paymind-moteur, dessiné par ui\portefeuille.js ;
+//! - [`fiche`] : les gestes de la fiche (prix, rythme, date, renouvellement, rappel, note, pause, « C'est
+//!   renouvelé », suppression), vérifiés et enregistrés ;
 //! - [`catalogue`] : la liste toute prête (catalogue\catalogue.json rangé dans l'exe, vérifié ; ses logos dans
 //!   ui\logos), la recherche sans accents, les logos des cartes ;
 //! - [`ajout`] : la liste toute prête à l'écran, « Un abonnement à moi », l'ajout vérifié et enregistré ;
@@ -32,6 +34,7 @@ pub mod ecran;
 #[cfg(feature = "essai")]
 pub mod essai;
 pub mod fenetre;
+pub mod fiche;
 pub mod pack;
 #[cfg(any(feature = "essai", test))]
 pub mod png;

@@ -389,8 +389,8 @@ impl Etat {
     }
 
     /// Un message du kit. « Retour » depuis l'accueil ramène à la console de Mindset (seulement dans Mindset : sinon
-    /// la demande est seulement notée) ; un ajout (la liste toute prête, « Un abonnement à moi ») est vérifié puis
-    /// enregistré ([`Etat::ajouter`]) ; le reste est noté au journal.
+    /// la demande est seulement notée) ; un ajout (la liste toute prête, « Un abonnement à moi ») ou un geste de la
+    /// fiche est vérifié puis enregistré ([`Etat::ajouter`], [`Etat::changer_fiche`]) ; le reste est noté au journal.
     fn recevoir(&mut self, m: &MessagePage) {
         let ligne = match m {
             MessagePage::Menu if self.vie.dans_mindset() => {
@@ -398,6 +398,10 @@ impl Etat {
             }
             MessagePage::Action { id, valeur, .. } if crate::ajout::est_ajout(id) => {
                 self.ajouter(id, valeur);
+                return;
+            }
+            MessagePage::Action { id, valeur, .. } if crate::fiche::est_geste(id) => {
+                self.changer_fiche(id, valeur);
                 return;
             }
             _ => crate::pont::ligne_journal(m),
@@ -434,6 +438,36 @@ impl Etat {
                 page.ordre(json!({ "kit": "message", "texte": crate::ajout::message_ajoute(&a), "bravo": true }));
             }
             Err(r) => page.ordre(json!({ "kit": "message", "texte": r })),
+        }
+    }
+
+    /// Un geste de la fiche (prix, date, pause, suppression...) : vérifié ici (jamais confiance dans la page),
+    /// enregistré dans abonnements.json et la carte de Mindset ; puis le portefeuille renvoyé à la page (le total,
+    /// « Bientôt », les cartes et la fiche ouverte suivent aussitôt), avec une bulle s'il y a lieu. Refusé ou pas
+    /// enregistré : la bulle le dit, et l'état d'avant est renvoyé (la page remet ce qu'elle avait déjà changé).
+    fn changer_fiche(&mut self, id: &str, valeur: &Value) {
+        let Some(app) = self.app.clone() else { return };
+        let page = app.state::<Page>();
+        // (les données occupées : rien n'est perdu, la personne réessaie)
+        let Ok(mut d) = self.donnees.try_borrow_mut() else {
+            page.ordre(json!({ "kit": "message", "texte": "Paymind est occupée : réessaie dans un instant." }));
+            return;
+        };
+        let Some(d) = d.as_mut() else { return };
+        let jour = heure::maintenant().date();
+        let fait = crate::fiche::lire(id, valeur, jour).and_then(|g| crate::fiche::appliquer(d, &g, jour));
+        self.jour = jour;
+        page.changer(crate::commandes::etat_page(VERSION, &[], &d.abonnements.liste, jour));
+        match fait {
+            Ok(f) => {
+                if let Some(m) = f.message {
+                    page.ordre(json!({ "kit": "message", "texte": m, "bravo": !f.supprime }));
+                }
+            }
+            Err(r) => {
+                self.journal.ecrire(&court(&format!("Écran : changement refusé ({id} : {r})")));
+                page.ordre(json!({ "kit": "message", "texte": r }));
+            }
         }
     }
 }

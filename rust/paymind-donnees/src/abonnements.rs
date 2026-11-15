@@ -37,6 +37,8 @@ use crate::valeurs::Objet;
 pub const FICHIER: &str = "abonnements.json";
 /// Le numéro de format écrit par cette version.
 pub const FORMAT: u64 = 1;
+/// Pourquoi la liste est en lecture seule quand elle vient d'une version plus récente de Paymind.
+pub const PLUS_RECENTE: &str = "la liste vient d'une version plus récente de Paymind";
 
 /// Un abonnement en JSON.
 pub fn abonnement_json(a: &Abonnement) -> Value {
@@ -211,6 +213,11 @@ impl Abonnements {
         &self.fichier
     }
 
+    /// La liste vient d'une version plus récente de Paymind (elle n'est jamais réécrite par celle-ci).
+    pub fn plus_recente(&self) -> bool {
+        self.lecture_seule.as_deref() == Some(PLUS_RECENTE)
+    }
+
     /// Pourquoi la liste ne peut pas être enregistrée pour l'instant ; rien si elle peut l'être.
     pub fn lecture_seule(&self) -> Option<&str> {
         self.lecture_seule.as_deref()
@@ -262,7 +269,7 @@ impl Abonnements {
                 "{FICHIER} vient d'une version plus récente de Paymind (format {}) : lu sans jamais être réécrit",
                 lu.format
             ));
-            a.lecture_seule = Some("la liste vient d'une version plus récente de Paymind".into());
+            a.lecture_seule = Some(PLUS_RECENTE.into());
         }
         if !lu.ignores.is_empty() {
             for (n, r) in &lu.ignores {

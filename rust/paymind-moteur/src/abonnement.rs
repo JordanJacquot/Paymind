@@ -150,6 +150,7 @@ pub struct Abonnement {
     /// La date du prochain paiement (ou du dernier, s'il est à renouveler).
     pub date: Date,
     /// Le jour voulu (1 à 31) : un paiement du 31 revient au 31 après un mois de 30 jours. Sans effet pour la semaine.
+    /// Choisir une nouvelle date dans la fiche change aussi le jour voulu ([`Abonnement::changer_date`]).
     pub ancrage: u32,
     /// Renouvellement automatique : la date avance seule après chaque paiement.
     pub auto: bool,
@@ -215,6 +216,24 @@ impl Abonnement {
     pub fn par_an(&self) -> u64 {
         self.prix * self.rythme.par_an()
     }
+
+    /// La date du prochain paiement choisie dans la fiche : elle devient la date gardée, et son jour devient le jour
+    /// voulu (l'ancrage). Choisir le 31 janvier fait revenir les paiements au 31 (le 28 février, puis le 31 mars) ;
+    /// choisir ensuite le 28 février les fait revenir au 28. Un abonnement à renouveler dont la nouvelle date n'est
+    /// pas passée redevient actif.
+    pub fn changer_date(&mut self, date: Date) {
+        self.date = date;
+        self.ancrage = date.jour();
+    }
+
+    /// Un nouveau rythme : la date gardée ne change pas. Depuis la semaine (où le jour voulu ne sert pas), le jour
+    /// voulu devient celui de la date gardée ; sinon il reste le même (un paiement du 31 reste au 31).
+    pub fn changer_rythme(&mut self, rythme: Rythme) {
+        if self.rythme == Rythme::Semaine && rythme != Rythme::Semaine {
+            self.ancrage = self.date.jour();
+        }
+        self.rythme = rythme;
+    }
 }
 
 /// Un identifiant libre pour un nouvel abonnement : « a » suivi du plus grand numéro déjà pris, plus un.
@@ -260,6 +279,27 @@ mod tests {
             Abonnement::nouveau("b9", "y", 1, Rythme::Mois, d),
         ];
         assert_eq!(id_libre(&l), "a4");
+    }
+
+    #[test]
+    fn changer_la_date_change_le_jour_voulu() {
+        let d = |a, m, j| Date::nouvelle(a, m, j).unwrap();
+        let mut a = Abonnement::nouveau("a1", "x", 100, Rythme::Mois, d(2026, 11, 30));
+        a.ancrage = 31;
+        a.changer_date(d(2027, 1, 31));
+        assert_eq!((a.date, a.ancrage), (d(2027, 1, 31), 31));
+        assert_eq!(crate::echeances::paiement_numero(&a, 1), Some(d(2027, 2, 28)));
+        assert_eq!(crate::echeances::paiement_numero(&a, 2), Some(d(2027, 3, 31)));
+        a.changer_date(d(2027, 2, 28));
+        assert_eq!(a.ancrage, 28);
+        assert_eq!(crate::echeances::paiement_numero(&a, 1), Some(d(2027, 3, 28)));
+        // Un nouveau rythme garde le jour voulu ; depuis la semaine, il prend celui de la date
+        a.ancrage = 31;
+        a.changer_rythme(Rythme::Trimestre);
+        assert_eq!((a.rythme, a.ancrage), (Rythme::Trimestre, 31));
+        a.rythme = Rythme::Semaine;
+        a.changer_rythme(Rythme::Mois);
+        assert_eq!((a.rythme, a.ancrage), (Rythme::Mois, 28));
     }
 
     #[test]

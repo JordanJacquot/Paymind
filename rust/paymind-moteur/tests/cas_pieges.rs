@@ -190,11 +190,12 @@ fn bientot_trente_jours_tries_par_date() {
         ab("a2", "Assurance", 54_000, Rythme::An, d(2027, 1, 9)),
         ab("a3", "Orange", 1599, Rythme::Mois, d(2026, 11, 15)), // aujourd'hui
         ab("a4", "Panier", 2000, Rythme::Semaine, d(2026, 11, 20)),
-        ab("a5", "Dernier jour", 100, Rythme::An, d(2026, 12, 14)), // dans 29 jours, le 30e jour : oui
-        ab("a6", "Trop loin", 100, Rythme::An, d(2026, 12, 15)),    // dans 30 jours, le 31e jour : non
+        ab("a5", "Dernier jour", 100, Rythme::An, d(2026, 12, 15)), // dans 30 jours : oui (comme la carte de Mindset)
+        ab("a6", "Trop loin", 100, Rythme::An, d(2026, 12, 16)),    // dans 31 jours : non
         ab("a7", "Pause", 100, Rythme::Mois, d(2026, 11, 16)),
         ab("a8", "Fini", 100, Rythme::Mois, d(2026, 11, 14)),
         ab("a9", "Abc", 100, Rythme::Mois, d(2026, 11, 18)), // même jour que Netflix : avant (ordre des noms)
+        ab("a10", "Veille", 100, Rythme::An, d(2026, 12, 14)), // dans 29 jours : oui
     ];
     l[6].pause = true;
     l[7].auto = false;
@@ -210,13 +211,34 @@ fn bientot_trente_jours_tries_par_date() {
             ("Panier", d(2026, 11, 27), 12),
             ("Panier", d(2026, 12, 4), 19),
             ("Panier", d(2026, 12, 11), 26),
-            ("Dernier jour", d(2026, 12, 14), 29),
+            ("Veille", d(2026, 12, 14), 29),
+            ("Dernier jour", d(2026, 12, 15), 30),
         ]
     );
-    // (Orange, payé aujourd'hui, revient le 15 décembre : au-delà des 30 jours, il ne paraît qu'une fois)
+    // (Orange, payé aujourd'hui, revient le 15 décembre, au jour 30 : il ne paraît qu'une fois, pas de doublon)
     let p = b.prochain.unwrap();
     assert_eq!((p.nom.as_str(), p.dans_jours), ("Orange", 0));
     assert_eq!(texte_prochain(&p, auj()), "Orange aujourd'hui");
+}
+
+/// Juste après l'ajout d'un abonnement par mois (premier paiement dans un mois, au jour 30) : « Bientôt » le montre,
+/// d'accord avec la carte de Mindset (« Netflix dans 30 jours »).
+#[test]
+fn bientot_d_accord_avec_la_carte_juste_apres_un_ajout() {
+    let l = vec![ab("a1", "Netflix", 799, Rythme::Mois, d(2026, 12, 15))];
+    let b = bilan(&l, auj());
+    assert_eq!(b.bientot.len(), 1);
+    assert_eq!(b.bientot[0].dans_jours, 30);
+    let p = b.prochain.unwrap();
+    assert_eq!(texte_prochain(&p, auj()), "Netflix dans 30 jours");
+    // Par semaine, payé aujourd'hui : chacun de ses paiements (jours 0, 7, 14, 21 et 28), sans doublon
+    let l = vec![ab("a1", "Panier", 2000, Rythme::Semaine, auj())];
+    let jours: Vec<i64> = bilan(&l, auj()).bientot.iter().map(|p| p.dans_jours).collect();
+    assert_eq!(jours, [0, 7, 14, 21, 28]);
+    // Par mois, payé le 31 janvier : le 28 février (jour 28) est un autre paiement, il paraît
+    let l = vec![ab("a1", "Box", 3000, Rythme::Mois, d(2027, 1, 31))];
+    let jours: Vec<i64> = bilan(&l, d(2027, 1, 31)).bientot.iter().map(|p| p.dans_jours).collect();
+    assert_eq!(jours, [0, 28]);
 }
 
 #[test]

@@ -14,8 +14,10 @@ use crate::abonnement::{Abonnement, Statut, par_mois};
 use crate::date::Date;
 use crate::echeances::{paiements_entre, prochaine_echeance};
 
-/// « Bientôt » : les paiements des 30 prochains jours, aujourd'hui compris (du jour 0 au jour 29 : un abonnement par
-/// mois payé aujourd'hui n'y paraît qu'une fois).
+/// « Bientôt » : les paiements des 30 prochains jours, du jour 0 (aujourd'hui) au jour 30 compris, comme la carte de
+/// Mindset qui dit « Netflix dans 30 jours » : un abonnement par mois ajouté aujourd'hui y paraît. Un abonnement payé
+/// aujourd'hui n'y reparaît pas au jour 30 (le paiement du mois suivant : jamais deux fois le même abonnement à un
+/// mois d'écart dans la liste).
 pub const BIENTOT_JOURS: i64 = 30;
 
 /// Le total d'une catégorie.
@@ -58,7 +60,7 @@ pub struct Bilan {
     pub actifs: usize,
     pub en_pause: usize,
     pub a_renouveler: usize,
-    /// Les paiements des 30 prochains jours (aujourd'hui compris), par date (puis par nom). Un abonnement par semaine y
+    /// Les paiements des 30 prochains jours (du jour 0 au jour 30, voir [`BIENTOT_JOURS`]), par date (puis par nom). Un abonnement par semaine y
     /// paraît à chacun de ses paiements.
     pub bientot: Vec<Paiement>,
     /// Le prochain paiement, même au-delà de 30 jours (rien si aucun abonnement actif).
@@ -83,7 +85,7 @@ pub fn bilan(liste: &[Abonnement], aujourdhui: Date) -> Bilan {
         bientot: Vec::new(),
         prochain: None,
     };
-    let fin = aujourdhui.plus_jours(BIENTOT_JOURS - 1).unwrap_or(aujourdhui);
+    let fin = aujourdhui.plus_jours(BIENTOT_JOURS).unwrap_or(aujourdhui);
     for a in liste {
         match a.statut(aujourdhui) {
             Statut::EnPause => {
@@ -107,7 +109,12 @@ pub fn bilan(liste: &[Abonnement], aujourdhui: Date) -> Bilan {
                 b.categories.push(TotalCategorie { categorie: a.categorie.clone(), par_an: an, par_mois: 0, nombre: 1 })
             }
         }
-        for d in paiements_entre(a, aujourdhui, fin) {
+        let mut dates = paiements_entre(a, aujourdhui, fin);
+        // (payé aujourd'hui et de nouveau au jour 30 : seulement aujourd'hui)
+        if dates.len() > 1 && dates.first() == Some(&aujourdhui) && dates.last() == Some(&fin) {
+            dates.pop();
+        }
+        for d in dates {
             b.bientot.push(paiement(a, d, aujourdhui));
         }
         if let Some(d) = prochaine_echeance(a, aujourdhui) {

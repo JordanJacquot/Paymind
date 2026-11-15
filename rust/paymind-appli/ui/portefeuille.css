@@ -98,35 +98,57 @@ body { --pm: #22E07A; --pm-fonce: #06140C; --doux-anim: cubic-bezier(.2, .9, .3,
 .pf-vide p { max-width: 520px; margin: 22px 0 0; font-size: 16px; line-height: 1.5; color: var(--doux); }
 .pf-vide p.pf-note { margin-top: 10px; font-size: 14px; color: var(--pale); }
 
-/* ---------------------------------------------------------------- la carte agrandie et sa fiche (lecture seule) */
-.scene-pf { position: absolute; inset: 0 0 50px 0; z-index: 2; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--ligne) transparent; visibility: hidden; pointer-events: none; }
+/* ---------------------------------------------------------------- la carte agrandie et sa fiche (modifiable, étape 5) */
+.scene-pf { position: absolute; inset: 0 0 50px 0; z-index: 2; overflow-y: auto; scroll-padding: 20px 0 24px; scrollbar-width: thin; scrollbar-color: var(--ligne) transparent; visibility: hidden; pointer-events: none; }
 .scene-pf.ouverte, .scene-pf.part { visibility: visible; }
 .scene-pf.ouverte { pointer-events: auto; }
-.scene-in { display: flex; flex-direction: column; align-items: center; padding: 22px 20px 30px; }
-.scene-pf .carte.grande { --l: min(340px, calc(100vw - 80px)); cursor: default; }
+.scene-in { display: flex; flex-direction: column; align-items: center; padding: 18px 20px 26px; }
+/* (la carte rapetisse quand l'écran est bas : la fiche entière tient sous elle dans un panneau de 760 de haut) */
+.scene-pf .carte.grande { --l: min(340px, calc(100vw - 80px), max(240px, calc((100vh - 590px) * 1.586))); cursor: default; }
 .scene-pf .carte.grande.anim { transition: transform 520ms var(--doux-anim); }
+.scene-pf .carte.grande.part-suppr { transition: transform 380ms ease, opacity 380ms ease; transform: scale(0.6) translateY(60px); opacity: 0; }
+/* (la fiche redessinée après un changement : sans rejouer son entrée, ni l'estompe du fond) */
+.scene-pf.sans-entree .fiche, .scene-pf.sans-entree .fermer-f, .pf.sans-anim { transition: none; }
 .fermer-f { position: absolute; left: 26px; top: 22px; z-index: 3; display: inline-flex; align-items: center; gap: 10px; height: 44px; padding: 0 18px 0 12px; border-radius: 99px; border: 1px solid var(--ligne); background: var(--carte); font-size: 15px; font-weight: 600; opacity: 0; transition: opacity 300ms ease, border-color 200ms ease; }
 .scene-pf.ouverte .fermer-f { opacity: 1; }
 .fermer-f svg { width: 20px; height: 20px; }
 .fermer-f:hover, .fermer-f:focus { border-color: var(--pm); }
-.fiche { width: min(800px, 100%); margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; border-radius: var(--r); background: var(--carte); border: 1px solid color-mix(in srgb, var(--ligne) 80%, transparent);
+.fiche { width: min(820px, 100%); margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; border-radius: var(--r); background: var(--carte); border: 1px solid color-mix(in srgb, var(--ligne) 80%, transparent);
   opacity: 0; transform: translateY(24px); transition: opacity 360ms ease 160ms, transform 460ms var(--doux-anim) 160ms; }
 .scene-pf.ouverte .fiche { opacity: 1; transform: none; }
-.f-col { padding: 18px 26px; min-width: 0; }
+.f-col { padding: 18px 24px; min-width: 0; }
 .f-col + .f-col { border-left: 1px solid color-mix(in srgb, var(--ligne) 80%, transparent); }
 .f-titre { font-size: 21px; font-weight: 800; margin: 0 0 12px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .f-titre em { font-style: normal; font-size: 12.5px; font-weight: 600; color: var(--pale); }
-.lbl { display: block; font-size: 13px; color: var(--doux); margin-bottom: 8px; }
-.prix-f { display: inline-flex; align-items: center; height: 52px; padding: 0 18px; border-radius: 14px; background: var(--fond2); border: 1px solid var(--ligne); margin-bottom: 16px; font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.choix-l { display: flex; gap: 4px; padding: 4px; border-radius: 99px; background: var(--fond2); border: 1px solid var(--ligne); margin-bottom: 18px; }
-.choix-l span { flex: 1; text-align: center; font-size: 14px; font-weight: 700; color: var(--pale); padding: 9px 6px; border-radius: 99px; }
-.choix-l span.oui { color: var(--pm-fonce); background: var(--pm); }
-.choix-l.petit { flex-wrap: wrap; margin-bottom: 6px; border-radius: 18px; }
-.choix-l.petit span { flex: 1 0 auto; font-size: 13px; padding: 8px 10px; }
+/* (le nom d'un abonnement à moi se tape à sa place) */
+.f-titre input { flex: 1 1 180px; min-width: 0; font: inherit; color: var(--texte); background: transparent; border: 0; border-bottom: 1px dashed var(--ligne); padding: 0 0 2px; outline: none; }
+.f-titre input:focus { border-bottom-color: var(--pm); }
+.lbl { display: block; font-size: 13px; color: var(--doux); margin-bottom: 7px; }
+/* Le prix : un champ simple, l'euro à droite ; un prix faux le dit à côté, en orange */
+.prix-ligne { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.prix-champ { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 50px; padding: 0 16px; border-radius: 14px; background: var(--fond2); border: 1px solid var(--ligne); box-sizing: border-box; transition: border-color 200ms ease; }
+.prix-champ:focus-within { border-color: var(--pm); }
+.prix-champ.faux { border-color: var(--orange); }
+.prix-champ input { width: 116px; border: 0; background: transparent; outline: none; font: inherit; font-size: 24px; font-weight: 800; color: var(--texte); font-variant-numeric: tabular-nums; }
+.prix-champ span { font-size: 20px; font-weight: 700; color: var(--doux); }
+.f-err { margin: 0; min-width: 0; font-size: 13px; line-height: 1.35; color: var(--orange); }
+/* Les pastilles à choisir (le rythme, le rappel) */
+.choix-f { display: flex; gap: 4px; padding: 4px; border-radius: 99px; background: var(--fond2); border: 1px solid var(--ligne); margin-bottom: 14px; }
+.choix-f button { flex: 1; text-align: center; font-size: 14px; font-weight: 700; color: var(--doux); padding: 9px 6px; border-radius: 99px; transition: background 180ms ease, color 180ms ease; }
+.choix-f button:hover, .choix-f button:focus { color: var(--texte); background: rgba(255, 255, 255, 0.07); outline: none; }
+.choix-f button:focus-visible { box-shadow: 0 0 0 2px var(--S); }
+.choix-f button.oui { color: var(--pm-fonce); background: var(--pm); }
+.choix-f.petit { flex-wrap: wrap; margin-bottom: 4px; border-radius: 18px; }
+.choix-f.petit button { flex: 1 0 auto; font-size: 13px; padding: 8px 10px; }
 .calc { display: flex; gap: 28px; }
 .calc div { font-size: 13px; color: var(--doux); }
 .calc b { display: block; margin-top: 3px; font-size: 26px; font-weight: 800; color: var(--texte); font-variant-numeric: tabular-nums; }
-.rangf { display: flex; align-items: center; gap: 14px; padding: 13px 0; }
+/* La note : une ligne à taper */
+.note-champ { display: block; margin-top: 14px; }
+.note-champ input { width: 100%; height: 42px; box-sizing: border-box; padding: 0 14px; border-radius: 12px; border: 1px solid var(--ligne); background: var(--fond2); color: var(--texte); font: inherit; font-size: 14.5px; outline: none; }
+.note-champ input:focus { border-color: var(--pm); }
+.note-champ input::placeholder { color: var(--pale); }
+.rangf { display: flex; align-items: center; gap: 14px; padding: 12px 0; }
 .rangf + .rangf { border-top: 1px solid color-mix(in srgb, var(--ligne) 70%, transparent); }
 .rangf:first-child { padding-top: 2px; }
 .rangf.rappel { padding-bottom: 8px; }
@@ -135,14 +157,49 @@ body { --pm: #22E07A; --pm-fonce: #06140C; --doux-anim: cubic-bezier(.2, .9, .3,
 .rangf .date { font-size: 15.5px; font-weight: 700; text-align: right; }
 .rangf .date small { display: block; font-size: 13px; color: var(--pm); font-weight: 600; }
 .rangf .date.passee small { color: var(--orange); }
-.bascule-l { width: 52px; height: 30px; flex: none; border-radius: 99px; background: var(--vide); border: 1px solid var(--ligne); position: relative; box-sizing: border-box; }
-.bascule-l::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #CFCDE0; }
-.bascule-l.oui { border-color: transparent; background: var(--pm); }
-.bascule-l.oui::after { transform: translateX(22px); background: #fff; }
-.f-etat { margin: 12px 0 0; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; background: color-mix(in srgb, var(--orange) 14%, transparent); color: var(--texte); }
-.f-etat.pause { background: rgba(255, 255, 255, 0.06); }
-.f-note { margin: 12px 0 0; font-size: 14px; line-height: 1.4; color: var(--doux); white-space: pre-line; overflow-wrap: anywhere; }
-.f-bientot { margin: 14px 0 0; font-size: 13px; color: var(--pale); }
+/* La date du prochain paiement : un bouton (l'agenda) qui ouvre le calendrier */
+.date-b { flex: none; display: inline-flex; align-items: center; gap: 10px; padding: 7px 12px 7px 10px; border-radius: 14px; border: 1px solid var(--ligne); background: var(--fond2); color: var(--texte); text-align: right; font-size: 15px; font-weight: 700; transition: border-color 180ms ease; }
+.date-b svg { width: 20px; height: 20px; color: var(--pm); flex: none; }
+.date-b small { display: block; font-size: 12.5px; color: var(--pm); font-weight: 600; }
+.date-b.passee small, .date-b.passee svg { color: var(--orange); }
+.date-b:hover, .date-b:focus { border-color: var(--pm); outline: none; }
+.renouv { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 0 0 12px; }
+.renouv small { flex: 1 1 140px; font-size: 13px; color: var(--doux); line-height: 1.35; }
+.bascule-f { width: 52px; height: 30px; flex: none; border-radius: 99px; background: var(--vide); border: 1px solid var(--ligne); position: relative; box-sizing: border-box; transition: background 220ms ease; }
+.bascule-f::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #CFCDE0; transition: transform 240ms cubic-bezier(.3, 1.4, .5, 1); }
+.bascule-f.oui { border-color: transparent; background: var(--pm); }
+.bascule-f.oui::after { transform: translateX(22px); background: #fff; }
+.bascule-f:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--fond), 0 0 0 4px var(--S); }
+/* Les boutons de la fiche : pause, supprimer (rouge), « C'est renouvelé » (vert) */
+.f-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.btn-f { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 99px; border: 1px solid var(--ligne); background: var(--carte2); color: var(--texte); font-size: 14.5px; font-weight: 700; white-space: nowrap; transition: transform 150ms ease, filter 150ms ease, background 200ms ease; }
+.btn-f svg { width: 17px; height: 17px; }
+.btn-f:hover, .btn-f:focus { transform: translateY(-2px); filter: brightness(1.12); outline: none; }
+.btn-f:focus-visible { box-shadow: 0 0 0 2px var(--fond), 0 0 0 4px var(--S); }
+.btn-f.plein { border-color: transparent; background: var(--pm); color: var(--pm-fonce); }
+.btn-f.danger { color: var(--rouge); background: color-mix(in srgb, var(--rouge) 10%, transparent); border-color: color-mix(in srgb, var(--rouge) 32%, transparent); }
+.btn-f.danger.sur { color: #1A0610; background: var(--rouge); border-color: transparent; }
+/* « Supprimer Netflix ? » : la question, puis « Oui, supprimer » et « Non, garder » */
+.f-suppr { margin-top: 10px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--rouge) 9%, transparent); border: 1px solid color-mix(in srgb, var(--rouge) 28%, transparent); }
+.f-suppr p { margin: 0; font-size: 16px; }
+.f-suppr p small { display: block; margin-top: 2px; font-size: 13px; color: var(--doux); }
+.f-suppr .f-btns { margin-top: 10px; }
+/* Le calendrier d'un mois, à la place de la colonne de droite */
+.cal-titre { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+.cal-tete { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.cal-tete b { font-size: 16px; font-weight: 800; text-transform: capitalize; }
+.cal-fl { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--ligne); background: var(--fond2); color: var(--texte); }
+.cal-fl svg { width: 18px; height: 18px; }
+.cal-fl:hover, .cal-fl:focus { border-color: var(--pm); outline: none; }
+.cal-fl.non { opacity: 0.3; }
+.cal-grille { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-j { text-align: center; font-size: 12px; color: var(--pale); padding: 2px 0 4px; }
+.cal-d { height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 15px; font-weight: 700; color: var(--texte); font-variant-numeric: tabular-nums; background: transparent; border: 1px solid transparent; }
+button.cal-d:hover, button.cal-d:focus { border-color: var(--pm); background: rgba(255, 255, 255, 0.06); outline: none; }
+.cal-d.non { color: var(--pale); opacity: 0.45; font-weight: 500; }
+.cal-d.auj { border-color: color-mix(in srgb, var(--pm) 50%, transparent); }
+.cal-d.oui { background: var(--pm); color: var(--pm-fonce); }
+.cal .f-btns { margin-top: 8px; }
 
 /* Une carte qui vient d'être ajoutée : elle saute un peu, avec un liseré vert */
 .carte.nouvelle { animation: pop 620ms var(--doux-anim); box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45), 0 0 0 2px var(--fond), 0 0 0 4px var(--pm); }
@@ -222,4 +279,4 @@ body { --pm: #22E07A; --pm-fonce: #06140C; --doux-anim: cubic-bezier(.2, .9, .3,
   .f-col + .f-col { border-left: 0; border-top: 1px solid color-mix(in srgb, var(--ligne) 80%, transparent); }
   .fermer-f { position: static; margin: 0 0 14px; align-self: flex-start; }
 }
-@media (prefers-reduced-motion: reduce) { .pf, .carte, .fiche, .scene-pf, .ajouter, .mini, .perso-b, .btn-m { animation: none !important; transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { .pf, .carte, .fiche, .scene-pf, .ajouter, .mini, .perso-b, .btn-m, .btn-f, .bascule-f, .bascule-f::after { animation: none !important; transition: none !important; } }

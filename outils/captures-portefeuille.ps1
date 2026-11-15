@@ -17,6 +17,9 @@
 # (le même, avec cette recherche, des lettres et des espaces), « valider:<data-k> » (un élément choisi comme d'un
 # clic, par exemple « valider:m:netflix » : Netflix ajouté, la page revient sur sa carte), « moi:<nom>:<prix> »
 # (« Un abonnement à moi » ouvert et rempli ; puis « valider:a:moi-ok » l'ajoute).
+# Depuis l'étape 5 : « valider:<data-k> » choisit aussi un élément de la fiche ouverte (« valider:f-pause »,
+# « valider:f-rappel:3-jours », « valider:f-date » puis « valider:f-jour:2026-12-10 »...), et « saisir:<data-k>=<texte> »
+# tape ce texte dans un champ de la fiche puis le valide comme avec Entrée (« saisir:f-prix=15,99 »).
 # Chaque capture est faite par l'exe lui-même (capture.demande) et copiée dans <Resultats>\<Prefixe>-<vue>.png. À la
 # fin, abonnements.json et etat.json de l'essai sont copiés à côté (<Prefixe>-abonnements.json, <Prefixe>-etat.json).
 #
@@ -146,8 +149,12 @@ try {
     Verifier (Attendre { (Compter 'Écran : montre accueil') -ge 1 } 10000) 'le portefeuille est dessiné (écran accueil)'
     [void](Attendre { $false } 2500)
 
+    $vus = @{}
     foreach ($v in ($Vues -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })) {
         $nom = $v -replace '[^\w-]', '-'
+        # (la même vue une seconde fois, par exemple l'accueil avant et après un changement : « accueil-2 »)
+        $vus[$nom] = 1 + [int]$vus[$nom]
+        if ($vus[$nom] -gt 1) { $nom = "$nom-$($vus[$nom])" }
         if ($v -eq 'accueil') { Ordre '{"kit":"accueil","fermer":true}'; Ordre '{"kit":"aller","ecran":"accueil"}' }
         elseif ($v -like 'fiche:*') { Ordre ('{"kit":"accueil","fiche":"' + ($v.Substring(6) -replace '[^\w.-]', '') + '"}') }
         elseif ($v -like 'voir:*') { Ordre '{"kit":"accueil","fermer":true}'; Ordre '{"kit":"aller","ecran":"accueil"}'; Ordre ('{"kit":"accueil","voir":"' + ($v.Substring(5) -replace '[^\w:.-]', '') + '"}') }
@@ -161,6 +168,11 @@ try {
             Ordre ($o | ConvertTo-Json -Compress -Depth 3)
         }
         elseif ($v -like 'valider:*') { Ordre ('{"kit":"accueil","valider":"' + ($v.Substring(8) -replace '[^\w:.-]', '') + '"}') }
+        elseif ($v -like 'saisir:*' -and $v.Contains('=')) {
+            $i = $v.IndexOf('=')
+            $o = [ordered]@{ kit = 'accueil'; valider = ($v.Substring(7, $i - 7) -replace '[^\w:.-]', ''); texte = ($v.Substring($i + 1) -replace '[^\w ,.]', '') }
+            Ordre ($o | ConvertTo-Json -Compress)
+        }
         else { Echec "vue inconnue : $v"; continue }
         [void](Attendre { $false } 1500)
         Capturer $nom

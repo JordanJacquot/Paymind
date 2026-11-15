@@ -5,7 +5,7 @@
 //! - le total par mois et par an, et combien d'abonnements comptent (ceux en pause ou à renouveler sont dits à part) ;
 //! - « Bientôt » : les trois prochains abonnements à payer dans les 30 jours, et la page de tous les paiements des
 //!   30 jours ;
-//! - les cartes rangées par catégorie (dans l'ordre de la liste toute prête), chacune avec sa fiche en lecture seule ;
+//! - les cartes rangées par catégorie (dans l'ordre de la liste toute prête), chacune avec sa fiche ;
 //! - la liste vide : « Ajoute ton premier abonnement ».
 //!
 //! Depuis l'étape 4, une carte ajoutée depuis la liste toute prête (src\catalogue.rs) a les couleurs et le logo
@@ -13,11 +13,18 @@
 //! initiales, aux couleurs de sa catégorie. Le bloc `catalogue` (la liste toute prête, src\ajout.rs) part avec
 //! l'accueil : « Ajouter » la montre sans attendre.
 //!
+//! Depuis l'étape 5, la fiche est modifiable (src\fiche.rs) : chaque fiche porte aussi ce que ses champs montrent
+//! (le prix à taper, la date du calendrier, « C'est renouvelé », la question « Supprimer Netflix ? »), et le bloc
+//! `communs.fiche` les textes de la fiche et les bornes du calendrier (aujourd'hui, dans 3 ans).
+//!
 //! Tous les textes vont à la page tels quels (elle les échappe) : en français simple, sans tiret long ni
 //! demi-cadratin.
 
+use paymind_moteur::abonnement::NOM_MAX;
 use paymind_moteur::textes::{dans, date_courte, date_fiche, date_longue, euros, euros_court, nombre_abonnements};
-use paymind_moteur::{Abonnement, BIENTOT_JOURS, Date, Rappel, Rythme, Statut, bilan, par_mois, prochaine_echeance};
+use paymind_moteur::{
+    Abonnement, BIENTOT_JOURS, Date, Rappel, Rythme, Statut, bilan, par_mois, prochaine_echeance, renouveler,
+};
 use std::sync::OnceLock;
 
 use serde_json::{Value, json};
@@ -137,37 +144,100 @@ fn texte_rappel(a: &Abonnement, statut: Statut, paiement: Option<Date>, aujourdh
     }
 }
 
-/// La fiche d'un abonnement, en lecture seule (la fiche modifiable vient à l'étape 5).
+/// Un prix tel qu'on le tape dans la fiche : « 13,49 », « 540 » (sans espace ni euro).
+pub fn prix_saisie(centimes: u64) -> String {
+    if centimes.is_multiple_of(100) {
+        (centimes / 100).to_string()
+    } else {
+        format!("{},{:02}", centimes / 100, centimes % 100)
+    }
+}
+
+/// La fiche d'un abonnement (modifiable depuis l'étape 5, src\fiche.rs).
 fn fiche(a: &Abonnement, statut: Statut, aujourdhui: Date) -> Value {
     let paiement = if statut == Statut::Actif { prochain(a, aujourdhui) } else { None };
-    let (titre_date, date, quand) = match statut {
-        // (« il ne compte pas dans le total » est dit juste en dessous, dans `etat`)
-        Statut::EnPause => ("Prochain paiement", "En pause".to_string(), String::new()),
-        Statut::ARenouveler => ("À renouveler depuis", date_fiche(a.date, aujourdhui), dans(a.date, aujourdhui)),
+    // (le jour montré par le calendrier en s'ouvrant : le prochain paiement, ou la date passée à renouveler)
+    let (titre_date, date, quand, jour) = match statut {
+        Statut::EnPause => ("Prochain paiement", "En pause".to_string(), String::new(), None),
+        Statut::ARenouveler => {
+            ("À renouveler depuis", date_fiche(a.date, aujourdhui), dans(a.date, aujourdhui), Some(a.date))
+        }
         Statut::Actif => match paiement {
-            Some(d) => ("Prochain paiement", date_fiche(d, aujourdhui), dans(d, aujourdhui)),
-            None => ("Prochain paiement", "Aucun".to_string(), String::new()),
+            Some(d) => ("Prochain paiement", date_fiche(d, aujourdhui), dans(d, aujourdhui), Some(d)),
+            None => ("Prochain paiement", "Aucun".to_string(), String::new(), None),
         },
     };
+    // (dit sous le titre de la date : pourquoi il ne compte pas)
     let etat = match statut {
         Statut::Actif => "",
-        Statut::EnPause => "En pause : il ne compte pas dans le total.",
-        Statut::ARenouveler => "À renouveler : il ne compte plus dans le total tant qu'il n'est pas renouvelé.",
+        Statut::EnPause => "Il ne compte pas dans le total",
+        Statut::ARenouveler => "Il ne compte plus dans le total",
     };
+    // « C'est renouvelé » : la date où il repartira
+    let renouvele = (statut == Statut::ARenouveler).then(|| {
+        let mut b = a.clone();
+        renouveler(&mut b, aujourdhui);
+        json!({ "texte": "C'est renouvelé", "aide": format!("Le prochain paiement sera {}", date_longue(b.date, aujourdhui)) })
+    });
     json!({
         "categorie": categorie(&a.categorie).nom,
         "prix": euros_court(a.prix),
+        "prix_saisie": prix_saisie(a.prix),
         "rythme": a.rythme.code(),
         "mois": euros(par_mois(a.par_an())),
         "an": euros(a.par_an()),
         "titre_date": titre_date,
         "date": date,
         "quand": quand,
+        // (en pause, la date ne se change pas : on la reprend d'abord)
+        "date_iso": jour.map(|d| d.iso()),
         "auto": a.auto,
+        "auto_texte": if a.auto { "Il repart tout seul à chaque fois" } else { "Non : il faut le renouveler soi-même" },
         "rappel": a.rappel.code(),
         "rappel_texte": texte_rappel(a, statut, paiement, aujourdhui),
         "etat": etat,
         "note": a.note,
+        // (seul un abonnement « à moi » change de nom)
+        "nom_modifiable": a.catalogue.is_none(),
+        "pause": a.pause,
+        "pause_texte": if a.pause { "Reprendre" } else { "Mettre en pause" },
+        "renouvele": renouvele,
+        "question": format!("Supprimer {} ?", a.nom),
+    })
+}
+
+/// Les textes de la fiche, les mêmes pour toutes les cartes, et les bornes du calendrier.
+fn textes_fiche(aujourdhui: Date) -> Value {
+    json!({
+        "je_paie": "Je paie",
+        "tous_les": "Tous les",
+        "par_mois": "Par mois",
+        "par_an": "Par an",
+        "erreur_prix": crate::fiche::ERREUR_PRIX,
+        "nom": "Son nom",
+        "nom_max": NOM_MAX,
+        "note": "Une note",
+        "note_indice": "Par exemple : le compte de la famille",
+        "note_max": crate::fiche::NOTE_FICHE_MAX,
+        "auto": "Renouvellement automatique",
+        "prevenir": "Me prévenir",
+        "changer_date": "Changer la date",
+        "supprimer": "Supprimer",
+        "suppr_aide": "Sa carte disparaît pour de bon.",
+        "suppr_oui": "Oui, supprimer",
+        "suppr_non": "Non, garder",
+        "calendrier": {
+            "titre": "Choisis le jour du prochain paiement",
+            "annuler": "Annuler",
+            "avant": "Mois d'avant",
+            "apres": "Mois d'après",
+            "mois": ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre",
+                     "novembre", "décembre"],
+            // (du lundi au dimanche)
+            "jours": ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."],
+            "min": aujourdhui.iso(),
+            "max": crate::fiche::date_max(aujourdhui).iso(),
+        },
     })
 }
 
@@ -213,6 +283,7 @@ pub fn portefeuille(liste: &[Abonnement], aujourdhui: Date) -> Value {
     let commun = json!({
         "rythmes": RYTHMES.iter().map(|(r, t)| json!([r.code(), t])).collect::<Vec<_>>(),
         "rappels": Rappel::TOUS.iter().map(|r| json!([r.code(), r.texte()])).collect::<Vec<_>>(),
+        "fiche": textes_fiche(aujourdhui),
     });
     if liste.is_empty() {
         return json!({
@@ -590,11 +661,18 @@ mod tests {
     }
 
     #[test]
-    fn fiche_en_lecture_seule() {
+    fn fiche_de_chaque_carte() {
         let auj = d(2026, 11, 15);
         let p = portefeuille(&liste(), auj);
         let netflix = &p["groupes"][0]["cartes"][0]["fiche"];
         assert_eq!(netflix["prix"], "13,49\u{a0}€");
+        assert_eq!(netflix["prix_saisie"], "13,49");
+        assert_eq!(netflix["date_iso"], "2026-11-18");
+        assert_eq!(netflix["nom_modifiable"], true);
+        assert_eq!(netflix["pause_texte"], "Mettre en pause");
+        assert_eq!(netflix["renouvele"], Value::Null);
+        assert_eq!(netflix["question"], "Supprimer Netflix ?");
+        assert_eq!(netflix["auto_texte"], "Il repart tout seul à chaque fois");
         assert_eq!(netflix["rythme"], "mois");
         assert_eq!(netflix["mois"], "13,49\u{a0}€");
         assert_eq!(netflix["an"], "161,88\u{a0}€");
@@ -609,12 +687,29 @@ mod tests {
         assert_eq!(pause["date"], "En pause");
         assert_eq!(pause["quand"], "");
         assert_eq!(pause["rappel_texte"], "Pas de bulle tant qu'il est en pause");
-        assert_eq!(pause["etat"], "En pause : il ne compte pas dans le total.");
+        assert_eq!(pause["etat"], "Il ne compte pas dans le total");
+        assert_eq!(pause["date_iso"], Value::Null);
+        assert_eq!(pause["pause_texte"], "Reprendre");
         let dofus = &p["groupes"][2]["cartes"][1]["fiche"];
         assert_eq!(dofus["titre_date"], "À renouveler depuis");
         assert_eq!(dofus["date"], "Mardi 3 novembre");
         assert_eq!(dofus["quand"], "il y a 12 jours");
         assert_eq!(dofus["rappel_texte"], "Plus de bulle : sa date est passée");
+        assert_eq!(dofus["etat"], "Il ne compte plus dans le total");
+        assert_eq!(dofus["date_iso"], "2026-11-03");
+        assert_eq!(dofus["auto_texte"], "Non : il faut le renouveler soi-même");
+        assert_eq!(
+            dofus["renouvele"],
+            json!({ "texte": "C'est renouvelé", "aide": "Le prochain paiement sera le mardi 1er décembre" })
+        );
+        // Les textes de la fiche et les bornes du calendrier
+        let f = &p["communs"]["fiche"];
+        assert_eq!(f["calendrier"]["min"], "2026-11-15");
+        assert_eq!(f["calendrier"]["max"], "2029-11-15");
+        assert_eq!(f["calendrier"]["jours"][0], "lun.");
+        assert_eq!(prix_saisie(54_000), "540");
+        assert_eq!(prix_saisie(5), "0,05");
+        assert_eq!(prix_saisie(99_999_999), "999999,99");
         // Le trimestre ramené au mois et à l'an ; le paiement de l'an prochain avec son année
         let club = &p["groupes"][8]["cartes"][0]["fiche"];
         assert_eq!(club["mois"], "13,33\u{a0}€");

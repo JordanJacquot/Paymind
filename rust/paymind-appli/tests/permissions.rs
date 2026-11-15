@@ -239,3 +239,63 @@ fn l_ajout_passe_par_action_sans_nouvelle_commande() {
         refusee(get_ipc_response(&f, demande(commande, PAGES, json!({ "id": "netflix" }))), commande);
     }
 }
+
+/// Étape 5 : les gestes de la fiche ne demandent aucune nouvelle commande. Ils passent par `action` (`fiche-prix`,
+/// `fiche-date`, `fiche-pause`, `fiche-supprimer`...), arrivent tels quels au receveur de l'appli, qui les vérifie
+/// (src\fiche.rs, `lire` puis `appliquer`) ; un message mal formé n'arrive jamais.
+#[test]
+fn la_fiche_passe_par_action_sans_nouvelle_commande() {
+    let essai = Essai::new("fiche");
+    let (app, _) = appli_avec_journal();
+    let f = principale(&app, &essai);
+    let recus = Arc::new(Mutex::new(Vec::new()));
+    let pour_receveur = Arc::clone(&recus);
+    app.state::<Page>().recevoir(move |m| pour_receveur.lock().unwrap().push(m));
+    let aujourdhui = paymind_moteur::Date::nouvelle(2026, 11, 15).expect("date");
+    let gestes = [
+        ("fiche-prix", json!({ "id": "a1", "prix": "15,99" })),
+        ("fiche-rythme", json!({ "id": "a1", "rythme": "an" })),
+        ("fiche-date", json!({ "id": "a1", "date": "2026-12-05" })),
+        ("fiche-auto", json!({ "id": "a1", "oui": false })),
+        ("fiche-rappel", json!({ "id": "a1", "rappel": "3-jours" })),
+        ("fiche-note", json!({ "id": "a1", "note": "Compte de la famille" })),
+        ("fiche-nom", json!({ "id": "a1", "nom": "Club de foot" })),
+        ("fiche-pause", json!({ "id": "a1", "oui": true })),
+        ("fiche-renouvele", json!({ "id": "a1" })),
+        ("fiche-supprimer", json!({ "id": "a1" })),
+    ];
+    for (id, valeur) in &gestes {
+        let m = json!({ "type": "action", "id": id, "valeur": valeur, "ecran": "accueil" });
+        assert!(get_ipc_response(&f, demande("action", PAGES, json!({ "message": m }))).is_ok(), "{m}");
+    }
+    let recus = recus.lock().unwrap().clone();
+    assert_eq!(recus.len(), gestes.len());
+    for m in &recus {
+        let pont::MessagePage::Action { id, valeur, .. } = m else { panic!("{m:?}") };
+        // (vérifié ensuite par l'appli elle-même : jamais confiance dans la page)
+        assert!(paymind_appli::fiche::est_geste(id), "{id}");
+        assert!(paymind_appli::fiche::lire(id, valeur, aujourdhui).is_ok(), "{m:?}");
+    }
+    // Arrivés au receveur, mais refusés par l'appli : un champ en trop, une date passée, un prix nul
+    for (id, valeur) in [
+        ("fiche-prix", json!({ "id": "a1", "prix": "0" })),
+        ("fiche-date", json!({ "id": "a1", "date": "2026-11-14" })),
+        ("fiche-supprimer", json!({ "id": "a1", "tout": true })),
+    ] {
+        assert!(paymind_appli::fiche::lire(id, &valeur, aujourdhui).is_err(), "{id} {valeur}");
+    }
+    // Mal formés : refusés par la commande elle-même
+    for message in [
+        json!({ "type": "action", "id": "fiche-prix", "valeur": { "id": "a1", "prix": "12" } }),
+        json!({ "type": "action", "id": "fiche prix", "valeur": { "id": "a1" }, "ecran": "accueil" }),
+        json!({ "type": "action", "id": "fiche-note", "valeur": { "id": "a1", "note": "x".repeat(20_000) }, "ecran": "accueil" }),
+        json!({ "type": "action", "id": "fiche-prix", "valeur": { "id": [[[["a1"]]]] }, "ecran": "accueil" }),
+    ] {
+        let r = get_ipc_response(&f, demande("action", PAGES, json!({ "message": message })));
+        assert_eq!(r.err(), Some(json!("refusé")));
+    }
+    // Aucune commande de la fiche à part : hors du manifeste, refusée par les permissions
+    for commande in ["fiche_prix", "modifier", "supprimer", "supprimer_abonnement", "enregistrer_fiche"] {
+        refusee(get_ipc_response(&f, demande(commande, PAGES, json!({ "id": "a1" }))), commande);
+    }
+}
