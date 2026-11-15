@@ -13,7 +13,7 @@ Les logos des marques restent la propriété de leurs marques ; ils servent seul
 
 - [x] **1. Paymind apparaît dans Mindset** : une page vide s'ouvre dans l'onglet de Mindset, suit le thème et se ferme
   proprement. Vérifié par les essais automatiques (repris de Mindcare) et un essai dans un Mindset de test.
-- [ ] **2. Le calcul des comptes** : chaque rythme (semaine, mois, trimestre, an) ramené au mois et à l'année, la date du
+- [x] **2. Le calcul des comptes** : chaque rythme (semaine, mois, trimestre, an) ramené au mois et à l'année, la date du
   prochain paiement qui avance seule après un renouvellement automatique, les totaux par catégorie, la liste « Bientôt » ;
   les abonnements gardés sur le PC avec une copie de secours. Vérifié par des tests sur les cas pièges (le 31 dans un
   mois de 30 jours, le 29 février, le passage d'année).
