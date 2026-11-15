@@ -57,6 +57,14 @@ impl Moment {
         paymind_moteur::Instant::nouveau(self.date(), self.heure, self.minute)
     }
 
+    /// Les secondes depuis le 1er janvier 1970 à 0 h, en heure locale (pour un écart entre deux moments).
+    pub fn secondes(&self) -> i64 {
+        self.date().jours_depuis_1970() * 86_400
+            + i64::from(self.heure) * 3600
+            + i64::from(self.minute) * 60
+            + i64::from(self.seconde)
+    }
+
     /// `Get-Date -Format 'yyyyMMdd-HHmmss'` : « 20261114-140500 » (le nom d'un fichier mis de côté).
     pub fn compacte(&self) -> String {
         format!(

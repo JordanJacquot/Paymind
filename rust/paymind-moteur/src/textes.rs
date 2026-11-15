@@ -143,6 +143,105 @@ pub fn texte_rappel(r: &RappelDu, aujourdhui: Date) -> String {
     }
 }
 
+/// La longueur d'un titre de bulle que Mindset montre en entier (il coupe au-delà, en unités UTF-16).
+pub const BULLE_TITRE_MAX: usize = 63;
+/// La longueur d'un texte de bulle que Mindset montre en entier.
+pub const BULLE_TEXTE_MAX: usize = 250;
+/// La longueur d'un nom dans une bulle (au-delà : « ... »).
+const BULLE_NOM_MAX: usize = 28;
+
+/// La longueur d'un texte comme Mindset la mesure (unités UTF-16, `.Length` de .NET).
+fn longueur(t: &str) -> usize {
+    t.encode_utf16().count()
+}
+
+/// Un texte de `max` unités UTF-16 au plus (la mesure de Mindset), coupé avec « ... » s'il est plus long.
+pub fn couper(t: &str, max: usize) -> String {
+    if longueur(t) <= max {
+        return t.to_string();
+    }
+    let mut s = String::new();
+    for c in t.chars() {
+        if longueur(&s) + c.len_utf16() + 3 > max {
+            break;
+        }
+        s.push(c);
+    }
+    s.trim_end().to_string() + "..."
+}
+
+/// Quand, dans une bulle : « aujourd'hui », « demain », « dans 3 jours » (jusqu'à 7 jours), « hier » ; plus loin, la
+/// date (« le samedi 9 janvier 2027 »).
+fn quand_bulle(d: Date, aujourdhui: Date) -> String {
+    if (-1..=7).contains(&aujourdhui.jours_jusqua(d)) { dans(d, aujourdhui) } else { date_longue(d, aujourdhui) }
+}
+
+/// Un rappel dans une bulle qui en regroupe plusieurs : « Netflix demain (13,49 €) », « Salle à renouveler dans 3
+/// jours ».
+fn rappel_court(r: &RappelDu, aujourdhui: Date) -> String {
+    let nom = couper(&r.nom, BULLE_NOM_MAX);
+    let q = quand_bulle(r.paiement, aujourdhui);
+    if r.auto { format!("{nom} {q} ({})", euros_court(r.prix)) } else { format!("{nom} à renouveler {q}") }
+}
+
+/// La fin du texte d'une bulle qui regroupe des rappels, quand `n` ne tiennent plus : « . », « et 1 autre. »...
+fn fin_bulle(n: usize) -> String {
+    match n {
+        0 => ".".to_string(),
+        1 => " et 1 autre.".to_string(),
+        n => format!(" et {n} autres."),
+    }
+}
+
+/// La bulle près de l'horloge pour les rappels dus en même temps (titre, texte), en mots simples, sans tiret long :
+///
+/// - un seul : « Netflix demain : 13,49 € » et « Paiement prévu le lundi 16 novembre. » ; sans renouvellement
+///   automatique : « Salle à renouveler demain » et « Cet abonnement ne se renouvelle pas tout seul. Date prévue : le
+///   lundi 16 novembre. » ;
+/// - plusieurs : une seule bulle, « 3 rappels de paiement » et « Netflix demain (13,49 €), Spotify dans 3 jours
+///   (11,12 €), Salle à renouveler aujourd'hui. », par date de paiement ; trop long, la fin devient « et 2 autres. ».
+///
+/// Le titre tient en 63 unités UTF-16 et le texte en 250 (Mindset couperait au-delà). Rien pour une liste vide.
+pub fn bulle_rappels(rappels: &[RappelDu], aujourdhui: Date) -> Option<(String, String)> {
+    let (titre, texte) = match rappels {
+        [] => return None,
+        [r] => {
+            let nom = couper(&r.nom, BULLE_NOM_MAX);
+            let q = quand_bulle(r.paiement, aujourdhui);
+            let date = date_longue(r.paiement, aujourdhui);
+            if r.auto {
+                (format!("{nom} {q} : {}", euros_court(r.prix)), format!("Paiement prévu {date}."))
+            } else {
+                let titre = if aujourdhui.jours_jusqua(r.paiement) < 0 {
+                    format!("{nom} à renouveler")
+                } else {
+                    format!("{nom} à renouveler {q}")
+                };
+                (titre, format!("Cet abonnement ne se renouvelle pas tout seul. Date prévue : {date}."))
+            }
+        }
+        _ => {
+            let mut l: Vec<&RappelDu> = rappels.iter().collect();
+            l.sort_by(|x, y| (x.paiement, &x.nom, &x.id).cmp(&(y.paiement, &y.nom, &y.id)));
+            let morceaux: Vec<String> = l.iter().map(|r| rappel_court(r, aujourdhui)).collect();
+            let mut texte = String::new();
+            let mut fin = fin_bulle(0);
+            for (i, m) in morceaux.iter().enumerate() {
+                let suivant = if i == 0 { m.clone() } else { format!("{texte}, {m}") };
+                let reste = fin_bulle(morceaux.len() - i - 1);
+                // (celui-ci ne tient plus : on s'arrête avant lui, « et N autres. » tenait au tour d'avant)
+                if i > 0 && longueur(&suivant) + longueur(&reste) > BULLE_TEXTE_MAX {
+                    fin = fin_bulle(morceaux.len() - i);
+                    break;
+                }
+                texte = suivant;
+            }
+            (format!("{} rappels de paiement", l.len()), texte + &fin)
+        }
+    };
+    Some((couper(&titre, BULLE_TITRE_MAX), couper(&texte, BULLE_TEXTE_MAX)))
+}
+
 /// « 1 abonnement », « 12 abonnements ».
 pub fn nombre_abonnements(n: usize) -> String {
     if n <= 1 { format!("{n} abonnement") } else { format!("{n} abonnements") }
@@ -201,5 +300,88 @@ mod tests {
         assert_eq!(nombre_abonnements(0), "0 abonnement");
         assert_eq!(nombre_abonnements(1), "1 abonnement");
         assert_eq!(nombre_abonnements(12), "12 abonnements");
+    }
+
+    fn rappel(nom: &str, prix: u64, paiement: Date, auto: bool) -> RappelDu {
+        use crate::{Instant, Rappel};
+        RappelDu {
+            id: format!("id-{nom}"),
+            nom: nom.into(),
+            prix,
+            paiement,
+            du: Instant::nouveau(paiement.plus_jours(-1).unwrap(), 9, 0),
+            rappel: Rappel::Veille,
+            auto,
+        }
+    }
+
+    fn sans_tiret_long(t: &str) {
+        assert!(!t.contains(['\u{2013}', '\u{2014}']), "{t}");
+    }
+
+    #[test]
+    fn la_bulle_d_un_rappel() {
+        let auj = d(2026, 11, 15);
+        let b = |r: RappelDu| bulle_rappels(&[r], auj).unwrap();
+        assert_eq!(
+            b(rappel("Netflix", 1349, d(2026, 11, 16), true)),
+            ("Netflix demain : 13,49\u{a0}€".into(), "Paiement prévu le lundi 16 novembre.".into())
+        );
+        assert_eq!(b(rappel("Netflix", 1349, auj, true)).0, "Netflix aujourd'hui : 13,49\u{a0}€");
+        assert_eq!(b(rappel("Box", 2999, d(2026, 11, 22), true)).0, "Box dans 7 jours : 29,99\u{a0}€");
+        // manqué pendant que le PC était éteint
+        assert_eq!(
+            b(rappel("Netflix", 1349, d(2026, 11, 14), true)),
+            ("Netflix hier : 13,49\u{a0}€".into(), "Paiement prévu le samedi 14 novembre.".into())
+        );
+        assert_eq!(
+            b(rappel("Assurance", 54_000, d(2026, 9, 1), true)).0,
+            "Assurance le mardi 1er septembre : 540\u{a0}€"
+        );
+        // sans renouvellement automatique
+        assert_eq!(
+            b(rappel("Salle", 2999, d(2026, 11, 16), false)),
+            (
+                "Salle à renouveler demain".into(),
+                "Cet abonnement ne se renouvelle pas tout seul. Date prévue : le lundi 16 novembre.".into()
+            )
+        );
+        assert_eq!(b(rappel("Salle", 2999, d(2026, 11, 13), false)).0, "Salle à renouveler");
+        assert!(bulle_rappels(&[], auj).is_none());
+        // un nom très long : le titre tient quand même
+        let (t, x) = b(rappel(&"Abonnement très long ".repeat(4), 99_999_999, d(2027, 1, 9), true));
+        assert!(
+            t.encode_utf16().count() <= BULLE_TITRE_MAX && t.starts_with("Abonnement très long") && t.contains("...")
+        );
+        sans_tiret_long(&t);
+        sans_tiret_long(&x);
+    }
+
+    #[test]
+    fn plusieurs_rappels_dans_une_seule_bulle() {
+        let auj = d(2026, 11, 15);
+        let l = [
+            rappel("Spotify", 1112, d(2026, 11, 18), true),
+            rappel("Netflix", 1349, d(2026, 11, 16), true),
+            rappel("Salle", 2999, auj, false),
+        ];
+        assert_eq!(
+            bulle_rappels(&l, auj).unwrap(),
+            (
+                "3 rappels de paiement".into(),
+                "Salle à renouveler aujourd'hui, Netflix demain (13,49\u{a0}€), Spotify dans 3 jours (11,12\u{a0}€)."
+                    .into()
+            )
+        );
+        // Beaucoup : la fin dit combien ne tiennent pas, et le texte reste dans les 250
+        let beaucoup: Vec<RappelDu> =
+            (0..30).map(|i| rappel(&format!("Abonnement numéro {i}"), 1000 + i, d(2026, 11, 16), true)).collect();
+        let (t, x) = bulle_rappels(&beaucoup, auj).unwrap();
+        assert_eq!(t, "30 rappels de paiement");
+        assert!(x.encode_utf16().count() <= BULLE_TEXTE_MAX, "{x}");
+        assert!(x.ends_with(" autres.") && x.starts_with("Abonnement numéro 0 demain"), "{x}");
+        let montres = x.matches("demain").count();
+        assert!(x.ends_with(&format!(" et {} autres.", 30 - montres)), "{x}");
+        sans_tiret_long(&x);
     }
 }

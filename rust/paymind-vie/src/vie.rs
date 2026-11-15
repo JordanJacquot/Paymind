@@ -260,6 +260,14 @@ impl Vie {
         self.ajuster_echelle(m);
     }
 
+    /// Une demande d'affichage venue de afficher.demande (un numéro de processus, un clic sur une bulle) : comme le
+    /// signal d'un second lancement. Affichée dans Mindset, la fenêtre n'est pas touchée.
+    pub fn afficher(&mut self, m: &mut Monde) {
+        if !self.quitte {
+            self.montrer(m);
+        }
+    }
+
     /// `Show-MainWindow` (systeme.ps1:53-62).
     fn montrer(&mut self, m: &mut Monde) {
         // systeme.ps1:54 : affichée dans Mindset, rien à faire

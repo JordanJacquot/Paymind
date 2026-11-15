@@ -18,11 +18,19 @@
 #  1. le relais Paymind.exe lance Mindset.exe de son dossier avec -Demarrage, puis se ferme ;
 #  2. Mindset trouve sa fenêtre (MSIntegration.Trouver : titre exact « Paymind », classe « Tauri Window ») ;
 #  3. accrochée dans le panneau (MSIntegration.Accrocher) : elle le voit (journal) et se montre ;
-#  4. etat.json : la carte de Mindset dit « Aucun abonnement pour l'instant » ; le thème de la suite est suivi ;
+#  4. etat.json : la carte de Mindset dit « Aucun abonnement pour l'instant » ; le thème de la suite est suivi ; premier
+#     lancement des rappels : aucune bulle pour le passé ;
 #  5. une capture de Paymind affichée dans le panneau ;
 #  6. « Fermer » de Mindset (WM_CLOSE) : elle quitte en moins de 6 s, verrou rendu ;
-#  7. relancée et accrochée de nouveau, « Tout quitter » (quitter.demande) : elle quitte en moins de 6 s ;
-#  8. plus aucun processus de l'essai ; rien de créé hors de l'essai.
+#  7. les bulles (étape 6) : un rappel manqué pendant que le « PC était éteint » (Netflix payé aujourd'hui, rappel la
+#     veille, dernière vérification il y a 2 jours). Relancée et accrochée de nouveau, elle demande une bulle
+#     (notification.demande) avec le bon texte, lue et supprimée par ce faux Mindset comme le vrai le fait (AUCUNE bulle
+#     n'est montrée : ce script ne fait que lire le fichier) ; le clic (« notif:<id> » dans afficher.demande, ce que
+#     Mindset écrit) ouvre sa fiche (journal, capture) ; une bulle inconnue est ignorée ; la carte de Mindset suit ;
+#     aucune seconde bulle ; puis « Tout quitter » (quitter.demande) : elle quitte en moins de 6 s ;
+#  8. trois rappels en même temps : une seule bulle « 3 rappels de paiement », le clic ouvre le portefeuille (journal,
+#     capture) ; relancée encore une fois sans rien changer : aucune bulle (jamais deux fois) ;
+#  9. plus aucun processus de l'essai ; rien de créé hors de l'essai.
 param(
     [Parameter(Mandatory = $true)][string]$Exe,
     [Parameter(Mandatory = $true)][string]$Relais,
@@ -92,6 +100,60 @@ function Get-Journal {
 }
 function Compter([string]$Motif) { @(Get-Journal | Where-Object { $_ -like "*$Motif*" }).Count }
 function Get-Hotes { @(Get-CimInstance Win32_Process -Filter "Name = 'Mindset.exe'" | Where-Object { $_.ExecutablePath -eq $exeEssai }) }
+
+# --- Les rappels (étape 6) : les fichiers du dossier d'essai, et le faux Mindset qui lit les bulles --------------------
+$notif = Join-Path $donnees 'notification.demande'
+$afficher = Join-Path $donnees 'afficher.demande'
+$nbsp = [char]0xA0
+function Write-Donnee([string]$Nom, [string]$Texte) {
+    [IO.File]::WriteAllText((Join-Path $donnees $Nom), $Texte, (New-Object Text.UTF8Encoding($false)))
+}
+# Un abonnement mensuel, payé dans $Jours jours (0 : aujourd'hui), avec ce rappel
+function New-Abonnement([string]$Id, [string]$Nom, [int]$Prix, [int]$Jours, [string]$Rappel) {
+    $d = (Get-Date).Date.AddDays($Jours)
+    [ordered]@{ id = $Id; nom = $Nom; catalogue = $null; categorie = 'moi'; prix = $Prix; rythme = 'mois'; date = $d.ToString('yyyy-MM-dd')
+        ancrage = $d.Day; auto = $true; rappel = $Rappel; pause = $false; note = '' }
+}
+function Set-Abonnements($Liste) {
+    Write-Donnee 'abonnements.json' (ConvertTo-Json -InputObject ([ordered]@{ format = 1; abonnements = @($Liste) }) -Depth 4)
+}
+# La dernière vérification des rappels, il y a $Jours jours à 10 h (comme un PC resté éteint depuis)
+function Set-DerniereVerification([int]$Jours) {
+    $v = (Get-Date).Date.AddDays(-$Jours).AddHours(10).ToString("yyyy-MM-dd'T'HH:mm")
+    Write-Donnee 'rappels.json' ('{ "format": 1, "verifie": "' + $v + '", "attente": [], "envoyees": [] }')
+}
+# Le faux Mindset (Watch-NotificationsApplis) : lit notification.demande et le supprime ; rien n'est montré
+function Read-Bulle([int]$Ms) {
+    $script:bulle = $null
+    [void](Attendre {
+        if (Test-Path -LiteralPath $notif) {
+            $o = [IO.File]::ReadAllBytes($notif)
+            Remove-Item -LiteralPath $notif -Force
+            $script:bulle = [pscustomobject]@{ Bom = ($o.Length -ge 3 -and $o[0] -eq 0xEF); Json = ([Text.Encoding]::UTF8.GetString($o) | ConvertFrom-Json) }
+        }
+        $null -ne $script:bulle
+    } $Ms)
+    $script:bulle
+}
+function Save-Capture([string]$Nom) {
+    $capture = Join-Path $donnees 'capture.png'
+    if (Test-Path -LiteralPath $capture) { Remove-Item -LiteralPath $capture -Force }
+    [IO.File]::WriteAllText((Join-Path $donnees 'capture.demande'), '1')
+    if (-not (Attendre { Test-Path -LiteralPath $capture } 6000)) { return $false }
+    [void](Attendre { $false } 300)
+    $dest = Join-Path $Resultats $Nom
+    Copy-Item -LiteralPath $capture -Destination $dest -Force
+    Write-Host "Capture : $dest ($((Get-Item -LiteralPath $dest).Length) octets)"
+    $true
+}
+function Get-Carte { [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes((Join-Path $donnees 'etat.json'))) | ConvertFrom-Json }
+# « Tout quitter » (quitter.demande) : elle quitte en moins de 6 s
+function Stop-ParMindset($Copie, [string]$Quand) {
+    $t = [Diagnostics.Stopwatch]::StartNew()
+    [IO.File]::WriteAllText((Join-Path $donnees 'quitter.demande'), "$PID")
+    $p = Get-Process -Id $Copie.Id -ErrorAction SilentlyContinue
+    Verifier ((-not $p) -or $p.WaitForExit(6000)) "$Quand : « Tout quitter » (quitter.demande), elle quitte en moins de 6 s ($($t.ElapsedMilliseconds) ms)"
+}
 
 # Ce qui existe déjà hors de l'essai (comparé à la fin : rien ne doit y apparaître)
 $horsEssai = @(
@@ -169,6 +231,8 @@ try {
     Verifier ((Compter 'Écran : menu du clic droit, raccourcis du navigateur, saisie automatique, mots de passe, outils de développement et zoom coupés') -ge 1 -or (Attendre { (Compter 'outils de développement et zoom coupés') -ge 1 } 10000)) 'réglages de WebView2 coupés et relus (journal)'
     Verifier (Attendre { (Compter 'Écran : page chargée http://tauri.localhost/index.html') -ge 1 } 15000) 'la page de Paymind est chargée (journal)'
     Verifier ((Compter 'Thème : ') -eq 0) "le thème de la suite (« $Theme ») est lu sans erreur"
+    Verifier (Attendre { (Compter 'Rappels : premier lancement') -ge 1 } 5000) 'rappels : premier lancement, rappels.json écrit (journal)'
+    Verifier ((Test-Path -LiteralPath (Join-Path $donnees 'rappels.json')) -and -not (Test-Path -LiteralPath $notif)) 'premier lancement : aucune bulle pour le passé'
 
     # --- 5. La capture ------------------------------------------------------------------------------------------------
     if ($a) {
@@ -195,16 +259,72 @@ try {
         if ($m) { $m.Dispose() }
     }
 
-    # --- 7. Relancée, puis « Tout quitter » (quitter.demande) --------------------------------------------------------
+    # --- 7. Un rappel manqué « PC éteint » : relancée, la bulle, le clic, puis « Tout quitter » ----------------------
+    # Netflix payé aujourd'hui, rappel la veille (hier à 9 h) ; dernière vérification il y a 2 jours
+    Set-Abonnements @((New-Abonnement 'a1' 'Netflix' 1349 0 'veille'))
+    Set-DerniereVerification 2
+    $prets = Compter 'Écran prêt'
     $b = Open-DansMindset 'Relancée'
     if ($b) {
-        [void](Attendre { $false } 1500)
-        $t = [Diagnostics.Stopwatch]::StartNew()
-        [IO.File]::WriteAllText((Join-Path $donnees 'quitter.demande'), "$PID")
-        $p = Get-Process -Id $b.Id -ErrorAction SilentlyContinue
-        Verifier ((-not $p) -or $p.WaitForExit(6000)) "« Tout quitter » (quitter.demande) : elle quitte en moins de 6 s ($($t.ElapsedMilliseconds) ms)"
+        $bulle = Read-Bulle 8000
+        Verifier ($null -ne $bulle) 'rappel manqué : une bulle demandée à Mindset (notification.demande), lue et supprimée par le faux Mindset'
+        if ($bulle) {
+            $j = $bulle.Json
+            Verifier (-not $bulle.Bom) 'notification.demande en UTF-8 sans BOM'
+            Verifier ($j.titre -ceq "Netflix aujourd'hui : 13,49$nbsp€") "titre de la bulle : « $($j.titre) »"
+            Verifier ($j.texte -clike 'Paiement prévu le *.' -and $j.texte -notmatch '[–—]') "texte de la bulle : « $($j.texte) »"
+            Verifier ($j.id -cmatch '^[0-9a-f]{12}$') "numéro de la bulle : $($j.id) (12 chiffres hexadécimaux)"
+            Verifier ((Compter "Bulle envoyée ($($j.id))") -eq 1) 'bulle envoyée une fois (journal)'
+            # Le clic sur la bulle : Mindset écrit « notif:<id> » dans afficher.demande
+            [void](Attendre { (Compter 'Écran prêt') -gt $prets } 15000)
+            [void](Attendre { $false } 2500)   # (la page dessinée)
+            [IO.File]::WriteAllText($afficher, "notif:$($j.id)")
+            Verifier (Attendre { -not (Test-Path -LiteralPath $afficher) -and (Compter "Bulle ouverte : $($j.id)") -ge 1 } 4000) 'clic sur la bulle : afficher.demande lu et supprimé, la bulle reconnue (journal)'
+            Verifier (Attendre { (Compter 'Bulle : fiche a1 ouverte') -ge 1 } 3000) 'clic sur la bulle : la fiche de Netflix est ouverte (journal)'
+            Verifier ([MSIntegration]::EstEnfantDe($b.Fenetre, $panneau.Handle)) 'clic sur la bulle : elle reste accrochée dans Mindset'
+            [void](Attendre { $false } 1500)   # (la fiche ouverte, son animation finie)
+            Verifier (Save-Capture 'capture-bulle-fiche.png') 'capture : la fiche ouverte par le clic'
+            [IO.File]::WriteAllText($afficher, 'notif:000000000000')
+            Verifier (Attendre { -not (Test-Path -LiteralPath $afficher) -and (Compter 'Bulle inconnue ignorée (000000000000)') -ge 1 } 4000) 'une bulle qu''elle n''a pas donnée : ignorée'
+        }
+        $c = Get-Carte
+        $lignes = @($c.Lignes | ForEach-Object { $_.Texte })
+        Verifier ($lignes[0] -ceq "13,49$nbsp€ par mois" -and $lignes[1] -ceq "Netflix aujourd'hui" -and $lignes[2] -ceq '1 abonnement') "carte de Mindset : $($lignes -join ' | ')"
+        Verifier (-not (Read-Bulle 8000)) 'aucune seconde bulle (8 s)'
+        Stop-ParMindset $b 'Relancée'
         Verifier (-not (Test-Path -LiteralPath (Join-Path $donnees 'quitter.demande'))) 'quitter.demande effacé'
         Verifier ((Compter 'Fermeture demandée par Mindset') -ge 1) 'fermeture demandée par Mindset (journal)'
+    }
+
+    # --- 8. Trois rappels en même temps : une seule bulle, le portefeuille ; puis plus rien --------------------------
+    Set-Abonnements @(
+        (New-Abonnement 'a1' 'Netflix' 1349 0 'veille'),
+        (New-Abonnement 'a2' 'Spotify' 1112 1 '3-jours'),
+        (New-Abonnement 'a3' 'Box' 2999 5 '7-jours'))
+    Set-DerniereVerification 3
+    $prets = Compter 'Écran prêt'
+    $g = Open-DansMindset 'Trois rappels'
+    if ($g) {
+        $bulle = Read-Bulle 8000
+        Verifier ($null -ne $bulle -and $bulle.Json.titre -ceq '3 rappels de paiement') "trois rappels : une seule bulle « $($bulle.Json.titre) »"
+        if ($bulle) {
+            Verifier ($bulle.Json.texte -clike 'Netflix aujourd''hui (13,49*), Spotify demain (11,12*), Box dans 5 jours (29,99*).') "texte de la bulle : « $($bulle.Json.texte) »"
+            [void](Attendre { (Compter 'Écran prêt') -gt $prets } 15000)
+            [void](Attendre { $false } 2500)
+            [IO.File]::WriteAllText($afficher, "notif:$($bulle.Json.id)")
+            Verifier (Attendre { (Compter 'Bulle : portefeuille ouvert') -ge 1 } 4000) 'clic sur la bulle : le portefeuille est ouvert (journal)'
+            [void](Attendre { $false } 1000)
+            Verifier (Save-Capture 'capture-bulle-portefeuille.png') 'capture : le portefeuille ouvert par le clic'
+        }
+        Verifier (-not (Read-Bulle 7000)) 'une seule bulle pour les trois (7 s)'
+        Stop-ParMindset $g 'Trois rappels'
+    }
+    $envoyees = Compter 'Bulle envoyée ('
+    $r = Open-DansMindset 'Relancée sans rien changer'
+    if ($r) {
+        Verifier (-not (Read-Bulle 8000)) 'relancée : aucune bulle (jamais deux fois la même)'
+        Verifier ((Compter 'Bulle envoyée (') -eq $envoyees -and $envoyees -eq 2) "deux bulles envoyées en tout (journal : $envoyees)"
+        Stop-ParMindset $r 'Relancée sans rien changer'
     }
 } catch {
     Echec "l'essai s'est arrêté : $($_.Exception.Message) (ligne $($_.InvocationInfo.ScriptLineNumber))"

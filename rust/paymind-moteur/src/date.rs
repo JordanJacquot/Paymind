@@ -167,6 +167,29 @@ impl Instant {
     pub fn minute_du_jour(&self) -> u32 {
         self.minute
     }
+
+    /// Les minutes depuis le 1er janvier 1970 à 0 h (pour un écart entre deux instants).
+    pub fn minutes_depuis_1970(&self) -> i64 {
+        self.date.jours_depuis_1970() * 1440 + i64::from(self.minute)
+    }
+
+    /// « 2026-11-15T09:00 » (rappels.json).
+    pub fn iso(&self) -> String {
+        format!("{}T{:02}:{:02}", self.date.iso(), self.minute / 60, self.minute % 60)
+    }
+
+    /// Lit « 2026-11-15T09:00 » (exactement ce format) ; rien si l'instant n'existe pas.
+    pub fn lire_iso(t: &str) -> Option<Instant> {
+        let o = t.as_bytes();
+        if o.len() != 16 || o[10] != b'T' || o[13] != b':' || !t.is_ascii() {
+            return None;
+        }
+        let date = Date::lire_iso(&t[..10])?;
+        let chiffres =
+            |p: &str| -> Option<u32> { if p.bytes().all(|c| c.is_ascii_digit()) { p.parse().ok() } else { None } };
+        let (h, m) = (chiffres(&t[11..13])?, chiffres(&t[14..16])?);
+        (h < 24 && m < 60).then(|| Instant::nouveau(date, h, m))
+    }
 }
 
 #[cfg(test)]
@@ -252,5 +275,26 @@ mod tests {
         let c = Instant::nouveau(d(2026, 11, 16), 0, 0);
         assert!(a < b && b < c);
         assert_eq!(Instant::nouveau(d(2026, 11, 15), 30, 0).minute_du_jour(), 1439);
+    }
+
+    #[test]
+    fn instants_ecrits_et_relus() {
+        let a = Instant::nouveau(d(2026, 11, 15), 9, 5);
+        assert_eq!(a.iso(), "2026-11-15T09:05");
+        assert_eq!(Instant::lire_iso("2026-11-15T09:05"), Some(a));
+        assert_eq!(Instant::nouveau(d(2026, 11, 16), 0, 0).minutes_depuis_1970() - a.minutes_depuis_1970(), 895);
+        for faux in [
+            "",
+            "2026-11-15",
+            "2026-11-15T9:05",
+            "2026-11-15T24:00",
+            "2026-11-15T09:60",
+            "2026-02-30T09:00",
+            "2026-11-15 09:05",
+            "2026-11-15T09:0é",
+            "2026-11-15T+9:05",
+        ] {
+            assert_eq!(Instant::lire_iso(faux), None, "{faux}");
+        }
     }
 }

@@ -11,7 +11,10 @@
 //! 4. Les surveillances : un pas de 100 ms sur le fil de la fenêtre, qui fait avancer la vie de l'appli (ses tours de
 //!    500 ms : accrochage et taille minimale, signal d'affichage, veille de la page, quitter.demande, suite.json,
 //!    etat.json). L'échelle de la page dans un panneau de Mindset plus petit que la fenêtre suit chaque nouvelle
-//!    taille (`Resized`), et chaque pas. La croix et `WM_CLOSE` (le bouton « Fermer » de Mindset) quittent.
+//!    taille (`Resized`), et chaque pas. La croix et `WM_CLOSE` (le bouton « Fermer » de Mindset) quittent. Les
+//!    rappels (étape 6) : toutes les 500 ms, la bulle en attente envoyée à Mindset (notification.demande) et
+//!    afficher.demande lu (un clic sur une bulle ouvre la fiche ou le portefeuille) ; au démarrage puis toutes les
+//!    30 s, la vérification des rappels dus (paymind-donnees, `rappels`).
 //! 5. La fin : la relance si le thème a changé, puis `std::process::exit` (aucun fil ne garde le processus en vie sans
 //!    fenêtre, contrat-appli partie 3), sans rien lâcher de l'état du fil de la fenêtre ([`quitter_sans_rien_lacher`]).
 //!
@@ -24,7 +27,7 @@ use std::rc::Rc;
 use std::thread::LocalKey;
 use std::time::{Duration, Instant};
 
-use paymind_donnees::{Donnees, Journal};
+use paymind_donnees::{Cible, Demande, Donnees, Journal};
 use paymind_moteur::Date;
 use paymind_vie::{
     Depart, DisqueReel, Environnement, Fin, Lancement, Monde, Reglages, Taille, Vie, demarrage_demande, demarrer,
@@ -43,6 +46,11 @@ use crate::{Page, VERSION, pack};
 
 /// Le pas de la minuterie : les tours de la vie de l'appli (toutes les 500 ms) tombent à ce pas près.
 const PAS: Duration = Duration::from_millis(100);
+/// afficher.demande (un clic sur une bulle) et l'envoi des bulles à Mindset : toutes les 500 ms.
+const RELEVE: Duration = Duration::from_millis(500);
+/// La vérification des rappels : au démarrage, puis toutes les 30 s (un rappel de 9 h sort avant 9 h 01 ; après une
+/// mise en veille du PC, au plus 30 s après le réveil).
+const VERIFICATION: Duration = Duration::from_secs(30);
 
 /// Tout ce que l'appli garde pendant qu'elle tourne, sur le fil de la fenêtre.
 struct Etat {
@@ -63,6 +71,10 @@ struct Etat {
     jour: Date,
     /// Tauri, une fois la fenêtre créée : l'état renvoyé à la page après un ajout
     app: Option<AppHandle>,
+    /// Le prochain relevé de afficher.demande et envoi de bulle
+    releve: Instant,
+    /// La prochaine vérification des rappels (la première au premier pas, dès que la fenêtre existe)
+    verification: Instant,
     /// Le dossier de données (construction d'essai : la demande de capture)
     #[cfg(feature = "essai")]
     dossier: PathBuf,
@@ -238,6 +250,8 @@ pub fn lancer() -> ! {
             donnees: Rc::clone(&donnees),
             jour,
             app: None,
+            releve: Instant::now(),
+            verification: Instant::now(),
             #[cfg(feature = "essai")]
             dossier: l.dossier_donnees.clone(),
         })
@@ -353,6 +367,7 @@ fn tour(app: &AppHandle) {
             // (une taille manquée par `Resized`, la fenêtre occupée, est vue ici)
             vie.ajuster_echelle(&mut Monde { systeme, disque, fenetre });
             etat.nouveau_jour(app);
+            etat.rappels(app);
         }
         #[cfg(feature = "essai")]
         capture_demandee(etat);
@@ -373,19 +388,84 @@ fn ligne_courte(m: &MessagePage) -> String {
 
 impl Etat {
     /// Minuit passé : le portefeuille est refait pour le nouveau jour (les délais, « Bientôt », les abonnements à
-    /// renouveler) et renvoyé à la page.
+    /// renouveler) et renvoyé à la page ; la carte de Mindset suit tout de suite (« Netflix demain » devient « Netflix
+    /// aujourd'hui »).
     fn nouveau_jour(&mut self, app: &AppHandle) {
         let jour = heure::maintenant().date();
         if jour == self.jour {
             return;
         }
         // (les données occupées : au prochain pas)
-        let Ok(d) = self.donnees.try_borrow() else { return };
-        let Some(d) = d.as_ref() else { return };
+        let Ok(mut d) = self.donnees.try_borrow_mut() else { return };
+        let Some(d) = d.as_mut() else { return };
         self.jour = jour;
         let etat = crate::commandes::etat_page(VERSION, &[], &d.abonnements.liste, jour);
         app.state::<Page>().changer(etat);
+        d.ecrire_etat();
         self.journal.ecrire(&format!("Portefeuille : nouveau jour ({})", jour.iso()));
+    }
+
+    /// Les rappels, toutes les 500 ms : la vérification (au démarrage puis toutes les 30 s ; des dates avancées par un
+    /// renouvellement automatique sont enregistrées et le portefeuille renvoyé à la page), l'envoi de la bulle en
+    /// attente à Mindset (notification.demande), puis afficher.demande (un clic sur une de nos bulles, un numéro de
+    /// processus).
+    fn rappels(&mut self, app: &AppHandle) {
+        let ici = Instant::now();
+        if ici < self.releve {
+            return;
+        }
+        self.releve = ici + RELEVE;
+        let maintenant = heure::maintenant();
+        let demande = {
+            // (les données occupées : au prochain relevé)
+            let Ok(mut d) = self.donnees.try_borrow_mut() else { return };
+            let Some(d) = d.as_mut() else { return };
+            if ici >= self.verification {
+                self.verification = ici + VERIFICATION;
+                if d.verifier_rappels(maintenant).avances > 0 {
+                    self.jour = maintenant.date();
+                    let etat = crate::commandes::etat_page(VERSION, &[], &d.abonnements.liste, self.jour);
+                    app.state::<Page>().changer(etat);
+                }
+            }
+            d.envoyer_bulle(maintenant);
+            d.demande_affichage()
+        };
+        match demande {
+            Demande::Rien => {}
+            Demande::Montrer => self.afficher(),
+            Demande::Ouvrir(cible) => {
+                self.afficher();
+                self.ouvrir_bulle(app, &cible);
+            }
+        }
+    }
+
+    /// Montre la fenêtre comme le signal d'un second lancement (dans Mindset si elle est gérée ; accrochée dans
+    /// Mindset, elle n'est pas touchée).
+    fn afficher(&mut self) {
+        let Etat { vie, systeme, disque, fenetre, .. } = self;
+        if let Some(fenetre) = fenetre.as_mut() {
+            vie.afficher(&mut Monde { systeme, disque, fenetre });
+        }
+    }
+
+    /// Un clic sur une bulle : la page ouvre ce qu'elle annonçait, la fiche de l'abonnement (un seul rappel) ou le
+    /// portefeuille (plusieurs).
+    fn ouvrir_bulle(&self, app: &AppHandle, cible: &Cible) {
+        let page = app.state::<Page>();
+        match cible {
+            Cible::Fiche(id) => {
+                page.ordre(json!({ "kit": "aller", "ecran": "accueil" }));
+                page.ordre(json!({ "kit": "accueil", "fiche": id }));
+                self.journal.ecrire(&format!("Bulle : fiche {id} ouverte"));
+            }
+            Cible::Portefeuille => {
+                page.ordre(json!({ "kit": "accueil", "fermer": true }));
+                page.ordre(json!({ "kit": "aller", "ecran": "accueil" }));
+                self.journal.ecrire("Bulle : portefeuille ouvert");
+            }
+        }
     }
 
     /// Un message du kit. « Retour » depuis l'accueil ramène à la console de Mindset (seulement dans Mindset : sinon

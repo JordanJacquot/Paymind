@@ -7,6 +7,8 @@
 //! - [`fichiers`] : les fichiers JSON écrits à côté puis remplacés d'un coup, un fichier abîmé mis de côté (`json_sur`) ;
 //! - [`reglages`] : reglages.json (le thème d'une copie que Mindset ne gère pas) ;
 //! - [`carte`] : la carte de Mindset (etat.json) ;
+//! - [`rappels`] : rappels.json, les bulles près de l'horloge (notification.demande) et le clic sur une bulle
+//!   (afficher.demande) ;
 //! - [`dossier`] : le dossier de données et suite.json (copie gérée ou non, dossier de travail) ;
 //! - [`donnees`] : tout réuni ;
 //! - [`valeurs`] : les règles de PowerShell suivies (champs sans majuscules, vrai ou faux).
@@ -21,6 +23,7 @@ pub mod dossier;
 pub mod fichiers;
 pub mod journal;
 pub mod moment;
+pub mod rappels;
 pub mod reglages;
 pub mod valeurs;
 
@@ -30,4 +33,5 @@ pub use donnees::Donnees;
 pub use fichiers::{FichierRelu, Fichiers};
 pub use journal::{Horloge, Journal, horloge_figee};
 pub use moment::Moment;
+pub use rappels::{Bulle, Cible, Demande, Rappels, Verifie};
 pub use reglages::Reglages;

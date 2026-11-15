@@ -748,3 +748,26 @@ fn tours_toutes_les_500_ms() {
     v.avancer(s(10.0), &mut b.monde());
     assert_eq!(v.tours(), 20);
 }
+
+#[test]
+fn partie5_afficher_demande_comme_le_signal() {
+    // afficher.demande (un numéro de processus, un clic sur une bulle) : comme le signal d'un second lancement
+    let mut b = banc_gere();
+    let mut v = vie_geree(&mut b);
+    b.systeme.emplacement = None;
+    v.avancer(s(0.5), &mut b.monde());
+    v.afficher(&mut b.monde());
+    assert_eq!(b.fenetre.activee, 1, "Mindset introuvable : sa propre fenêtre");
+    // Accrochée dans Mindset : la fenêtre n'est pas touchée
+    b.fenetre.accrochee = true;
+    v.avancer(s(1.0), &mut b.monde());
+    v.afficher(&mut b.monde());
+    assert_eq!(b.fenetre.activee, 1);
+    assert!(b.systeme.lances.is_empty());
+    // En train de quitter : rien
+    b.fenetre.accrochee = false;
+    v.avancer(s(1.5), &mut b.monde());
+    v.croix(&mut b.monde());
+    v.afficher(&mut b.monde());
+    assert_eq!(b.fenetre.activee, 1);
+}

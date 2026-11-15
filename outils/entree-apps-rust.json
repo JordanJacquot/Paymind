@@ -10,6 +10,7 @@
     "exe": "Paymind.exe",
     "mutex": "Local\\Paymind-Instance",
     "afficher_signal": "Local\\Paymind-Afficher",
+    "afficher_fichier": "afficher.demande",
     "donnees": "%LOCALAPPDATA%\\Mindset\\Paymind",
     "admin": false,
     "cache_depuis": "0.1.0",
