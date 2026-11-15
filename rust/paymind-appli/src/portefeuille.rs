@@ -8,20 +8,27 @@
 //! - les cartes rangées par catégorie (dans l'ordre de la liste toute prête), chacune avec sa fiche en lecture seule ;
 //! - la liste vide : « Ajoute ton premier abonnement ».
 //!
-//! Les logos viennent à l'étape 4 (la liste toute prête) : le champ `logo` de chaque carte est déjà là, vide pour
-//! l'instant ; une carte sans logo montre une plaque avec ses initiales, aux couleurs de sa catégorie.
+//! Depuis l'étape 4, une carte ajoutée depuis la liste toute prête (src\catalogue.rs) a les couleurs et le logo
+//! officiel de sa marque ([`crate::catalogue::logo_carte`]) ; une carte « à moi » montre une plaque avec ses
+//! initiales, aux couleurs de sa catégorie. Le bloc `catalogue` (la liste toute prête, src\ajout.rs) part avec
+//! l'accueil : « Ajouter » la montre sans attendre.
 //!
 //! Tous les textes vont à la page tels quels (elle les échappe) : en français simple, sans tiret long ni
 //! demi-cadratin.
 
 use paymind_moteur::textes::{dans, date_courte, date_fiche, date_longue, euros, euros_court, nombre_abonnements};
 use paymind_moteur::{Abonnement, BIENTOT_JOURS, Date, Rappel, Rythme, Statut, bilan, par_mois, prochaine_echeance};
+use std::sync::OnceLock;
+
 use serde_json::{Value, json};
+
+use crate::catalogue::{Modele, catalogue, logo_carte, logo_rond};
 
 /// La couleur de Paymind (celle de sa carte dans Mindset, de son logo, du bouton « Ajouter »).
 pub const COULEUR: &str = "#22E07A";
 
-/// L'id de la page « Ajouter un abonnement » (étape 4 : la liste toute prête ; pour l'instant, « bientôt »).
+/// Le bouton « Ajouter » : il montre la liste toute prête, dessinée par la page dans l'accueil (src\ajout.rs,
+/// bloc `catalogue`).
 pub const PAGE_AJOUTER: &str = "ajouter";
 /// L'id de la page de tous les paiements des 30 prochains jours.
 pub const PAGE_BIENTOT: &str = "bientot";
@@ -29,7 +36,7 @@ pub const PAGE_BIENTOT: &str = "bientot";
 pub const PASTILLES: usize = 3;
 
 /// Une catégorie : son id (celui de la liste toute prête), son nom à l'écran et les deux couleurs de ses cartes
-/// (le haut à gauche, le bas à droite du dégradé).
+/// sans logo (le haut à gauche, le bas à droite du dégradé).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Categorie {
     pub id: &'static str,
@@ -38,28 +45,47 @@ pub struct Categorie {
     pub c2: &'static str,
 }
 
-/// Les catégories, dans l'ordre de l'écran : celles de la liste toute prête (catalogue\catalogue.json, préparé pour
-/// l'étape 4), puis « À moi ». Une catégorie inconnue (d'une version plus récente) va dans [`AUTRES`].
-pub const CATEGORIES: [Categorie; 12] = [
-    Categorie { id: "films", nom: "Films et séries", c1: "#D6304A", c2: "#4A0A18" },
-    Categorie { id: "musique", nom: "Musique", c1: "#A238FF", c2: "#3A0E66" },
-    Categorie { id: "jeux", nom: "Jeux vidéo", c1: "#3E5FC8", c2: "#0E1A48" },
-    Categorie { id: "telephone", nom: "Téléphone et internet", c1: "#0091D5", c2: "#002E52" },
-    Categorie { id: "banque", nom: "Banque", c1: "#2F6FA8", c2: "#0B2238" },
-    Categorie { id: "assurances", nom: "Assurances et santé", c1: "#14A38B", c2: "#063F36" },
-    Categorie { id: "sport", nom: "Sport", c1: "#F26B1D", c2: "#5E2604" },
-    Categorie { id: "presse", nom: "Presse et lecture", c1: "#C9932A", c2: "#4A3008" },
-    Categorie { id: "logiciels", nom: "Logiciels et stockage", c1: "#5A6BE0", c2: "#1A1F5C" },
-    Categorie { id: "courses", nom: "Courses et livraison", c1: "#E0457B", c2: "#5A0F2C" },
-    Categorie { id: "energie", nom: "Maison et énergie", c1: "#6FA83A", c2: "#22400E" },
-    Categorie { id: "moi", nom: "À moi", c1: "#5B4BD6", c2: "#1C1450" },
-];
+/// La catégorie d'un abonnement « à moi » (la seule, avec [`AUTRES`], qui n'est pas dans la liste toute prête).
+pub const MOI: Categorie = Categorie { id: "moi", nom: "À moi", c1: "#5B4BD6", c2: "#1C1450" };
 /// La catégorie d'un abonnement dont la catégorie n'est pas connue de cette version.
 pub const AUTRES: Categorie = Categorie { id: "autres", nom: "Autres", c1: "#5A5A6E", c2: "#17171F" };
 
+/// Les catégories, dans l'ordre de l'écran : celles de la liste toute prête (catalogue\catalogue.json : leurs noms
+/// et leurs couleurs, dans leur ordre), puis « À moi ». Une catégorie inconnue (d'une version plus récente) va dans
+/// [`AUTRES`].
+pub fn categories() -> &'static [Categorie] {
+    static LISTE: OnceLock<Vec<Categorie>> = OnceLock::new();
+    LISTE.get_or_init(|| {
+        let mut l: Vec<Categorie> = catalogue()
+            .categories
+            .iter()
+            .map(|c| Categorie { id: &c.id, nom: &c.nom, c1: &c.fond, c2: &c.fond_fin })
+            .collect();
+        l.push(MOI);
+        l
+    })
+}
+
 /// La catégorie d'un id (inconnue : [`AUTRES`]).
 pub fn categorie(id: &str) -> Categorie {
-    CATEGORIES.iter().copied().find(|c| c.id == id).unwrap_or(AUTRES)
+    categories().iter().copied().find(|c| c.id == id).unwrap_or(AUTRES)
+}
+
+/// Le modèle de la liste toute prête d'un abonnement (rien pour un abonnement « à moi », ou d'un modèle qui n'est
+/// plus dans la liste).
+fn modele(a: &Abonnement) -> Option<&'static Modele> {
+    a.catalogue.as_deref().and_then(|id| catalogue().modele(id))
+}
+
+/// Les couleurs d'une carte : celles de sa marque (liste toute prête), sinon celles de sa catégorie.
+fn couleurs(a: &Abonnement) -> (&'static str, &'static str) {
+    match modele(a) {
+        Some(m) => (&m.fond, &m.fond_fin),
+        None => {
+            let c = categorie(&a.categorie);
+            (c.c1, c.c2)
+        }
+    }
 }
 
 /// Les initiales d'un nom, pour la plaque d'une carte sans logo : la première lettre ou le premier chiffre de chacun
@@ -84,7 +110,7 @@ fn statut_code(s: Statut) -> &'static str {
 }
 
 /// Les choix de rythme de la fiche, dans l'ordre (code, texte).
-const RYTHMES: [(Rythme, &str); 4] =
+pub(crate) const RYTHMES: [(Rythme, &str); 4] =
     [(Rythme::Semaine, "Semaine"), (Rythme::Mois, "Mois"), (Rythme::Trimestre, "Trimestre"), (Rythme::An, "An")];
 
 /// Le prochain paiement d'un abonnement actif ce jour-là (rien s'il n'en a pas).
@@ -148,7 +174,7 @@ fn fiche(a: &Abonnement, statut: Statut, aujourdhui: Date) -> Value {
 /// Une carte du portefeuille.
 fn carte(a: &Abonnement, aujourdhui: Date) -> Value {
     let statut = a.statut(aujourdhui);
-    let cat = categorie(&a.categorie);
+    let (c1, c2) = couleurs(a);
     // (en pause ou à renouveler : une pastille en haut à droite, et la ligne du bas le dit ; la date ne se coupe
     // jamais en deux, « 10 » et « déc. » restent sur la même ligne)
     let date = |d: Date| date_courte(d).replace(' ', "\u{a0}");
@@ -164,16 +190,17 @@ fn carte(a: &Abonnement, aujourdhui: Date) -> Value {
         "id": a.id,
         "nom": a.nom,
         "initiales": initiales(&a.nom),
-        "c1": cat.c1,
-        "c2": cat.c2,
-        // (étape 4 : le fichier du logo de la liste toute prête, dans ui\ ; rien pour l'instant, ni pour un
-        // abonnement « à moi »)
-        "logo": Value::Null,
+        "c1": c1,
+        "c2": c2,
+        // (le logo officiel d'un abonnement de la liste toute prête ; rien pour un abonnement « à moi » : la plaque
+        // de ses initiales)
+        "logo": modele(a).map_or(Value::Null, logo_carte),
         "prix": euros_court(a.prix),
         "rythme": a.rythme.par_texte(),
         "ligne": ligne,
         "badge": badge,
-        // (étape 4 : le petit mot de l'offre, en haut à droite, comme « Box » ou « Mobile » dans la maquette)
+        // (un petit mot en haut à droite, comme « Box » ou « Mobile » dans la maquette : pas dans la liste toute
+        // prête pour l'instant)
         "etiquette": "",
         "statut": statut_code(statut),
         "fiche": fiche(a, statut, aujourdhui),
@@ -211,14 +238,15 @@ pub fn portefeuille(liste: &[Abonnement], aujourdhui: Date) -> Value {
         if pastilles.len() < PASTILLES
             && let Some(a) = liste.iter().find(|a| a.id == p.id)
         {
-            let cat = categorie(&a.categorie);
+            let (c1, c2) = couleurs(a);
             pastilles.push(json!({
                 "id": a.id,
                 "nom": a.nom,
                 "initiales": initiales(&a.nom),
-                "c1": cat.c1,
-                "c2": cat.c2,
-                "logo": Value::Null,
+                "c1": c1,
+                "c2": c2,
+                // (un logo trop large pour un rond : les initiales, et le nom à côté)
+                "logo": modele(a).and_then(logo_rond).unwrap_or(Value::Null),
                 "date": date_courte(p.date),
                 "aide": format!("{} : {} {}", a.nom, euros_court(p.prix), dans(p.date, aujourdhui)),
             }));
@@ -233,7 +261,7 @@ pub fn portefeuille(liste: &[Abonnement], aujourdhui: Date) -> Value {
     });
 
     // Les cartes, par catégorie (dans l'ordre de la liste toute prête ; dans une catégorie, l'ordre de la liste)
-    let mut ordre: Vec<Categorie> = CATEGORIES.to_vec();
+    let mut ordre: Vec<Categorie> = categories().to_vec();
     ordre.push(AUTRES);
     let groupes: Vec<Value> = ordre
         .iter()
@@ -275,27 +303,6 @@ pub fn portefeuille(liste: &[Abonnement], aujourdhui: Date) -> Value {
         "groupes": groupes,
         "ajouter": PAGE_AJOUTER,
         "communs": commun,
-    })
-}
-
-/// La page « Ajouter un abonnement » : la liste toute prête arrive à l'étape 4.
-pub fn page_ajouter() -> Value {
-    json!({
-        "titre": "Ajouter un abonnement",
-        "sous": "Bientôt dans Paymind",
-        "icone": "plus",
-        "couleur": COULEUR,
-        "module": {
-            "icone": "plus",
-            "couleur": COULEUR,
-            "titre": "Bientôt",
-            "texte": "Ici, tu pourras ajouter un abonnement en deux clics.",
-        },
-        "blocs": [
-            { "type": "texte", "texte": "Une grande liste toute prête arrive bientôt : films et séries, musique, jeux vidéo, téléphone et internet, banque, assurances, sport, presse... avec le prix habituel déjà rempli, que tu pourras corriger." },
-            { "type": "texte", "texte": "Tu pourras aussi ajouter un abonnement à toi, en tapant son nom et son prix." },
-            { "type": "note", "texte": "Tout reste sur ce PC : rien n'est envoyé sur Internet." },
-        ],
     })
 }
 
@@ -412,14 +419,72 @@ mod tests {
         assert_eq!(categorie("moi").nom, "À moi");
         assert_eq!(categorie("video"), AUTRES);
         assert_eq!(categorie(""), AUTRES);
+        // Les noms et couleurs viennent de la liste toute prête, dans son ordre, puis « À moi »
+        let ids: Vec<&str> = categories().iter().map(|c| c.id).collect();
+        assert_eq!(
+            ids,
+            [
+                "films",
+                "musique",
+                "jeux",
+                "telephone",
+                "banque",
+                "assurances",
+                "sport",
+                "presse",
+                "logiciels",
+                "courses",
+                "energie",
+                "moi"
+            ]
+        );
+        assert_eq!(categorie("jeux").c1, "#3E5FC8");
+        assert_eq!(categorie("telephone").nom, "Téléphone et internet");
         // Chaque catégorie a deux couleurs que la page accepte, et un id unique
         let mut ids = Vec::new();
-        for c in CATEGORIES.iter().chain([&AUTRES]) {
+        for c in categories().iter().chain([&AUTRES]) {
             assert!(crate::pont::couleur_valable(c.c1) && crate::pont::couleur_valable(c.c2), "{c:?}");
             assert!(crate::pont::id_valable(c.id));
             assert!(!ids.contains(&c.id), "{} en double", c.id);
             ids.push(c.id);
         }
+    }
+
+    /// Une carte de la liste toute prête a les couleurs et le logo de sa marque ; une carte « à moi », ou d'un modèle
+    /// qui n'est plus dans la liste, la plaque de ses initiales aux couleurs de sa catégorie.
+    #[test]
+    fn cartes_de_la_liste_toute_prete_avec_leur_logo() {
+        let auj = d(2026, 11, 15);
+        let avec = |mut a: Abonnement, id: &str| {
+            a.catalogue = Some(id.into());
+            a
+        };
+        let l = vec![
+            avec(ab("a1", "Netflix", "films", 799, Rythme::Mois, d(2026, 11, 16)), "netflix"),
+            avec(ab("a2", "World of Warcraft", "jeux", 1299, Rythme::Mois, d(2026, 11, 17)), "worldofwarcraft"),
+            avec(ab("a3", "Dofus", "jeux", 599, Rythme::Mois, d(2026, 11, 18)), "dofus"),
+            ab("a4", "Mon club", "moi", 4000, Rythme::Trimestre, d(2026, 12, 10)),
+            avec(ab("a5", "Vieux service", "films", 500, Rythme::Mois, d(2026, 12, 1)), "plus-dans-la-liste"),
+            avec(ab("a6", "Amazon Prime", "films", 699, Rythme::Mois, d(2026, 12, 2)), "amazonprime"),
+        ];
+        let p = portefeuille(&l, auj);
+        let films = p["groupes"][0]["cartes"].as_array().unwrap();
+        assert_eq!(films[0]["c1"], "#E50914");
+        assert_eq!(films[0]["logo"]["forme"], "blanc");
+        assert_eq!(films[0]["logo"]["url"], "logos/netflix.svg");
+        assert_eq!(films[1]["c1"], categorie("films").c1);
+        assert_eq!(films[1]["logo"], Value::Null);
+        let jeux = p["groupes"][1]["cartes"].as_array().unwrap();
+        assert_eq!(jeux[0]["logo"]["url"], "logos/worldofwarcraft.svg");
+        assert_eq!(jeux[1]["logo"]["url"], "logos/dofus.png");
+        let moi = &p["groupes"][2]["cartes"][0];
+        assert_eq!((moi["c1"].as_str(), &moi["logo"]), (Some(MOI.c1), &Value::Null));
+        // Les pastilles : Netflix (son N), World of Warcraft (son logo rond), Dofus (son œuf)
+        let el = p["bientot"]["elements"].as_array().unwrap();
+        assert_eq!(el[0]["logo"]["url"], "logos/netflix.svg");
+        assert_eq!(el[1]["logo"]["url"], "logos/worldofwarcraft.svg");
+        assert_eq!(el[2]["logo"]["url"], "logos/dofus-oeuf.png");
+        assert_eq!(el[2]["c1"], "#7BA33A");
     }
 
     #[test]
@@ -598,7 +663,6 @@ mod tests {
         let mut l = Vec::new();
         textes(&portefeuille(&liste(), auj), &mut l);
         textes(&portefeuille(&[], auj), &mut l);
-        textes(&page_ajouter(), &mut l);
         textes(&page_bientot(&liste(), auj).unwrap(), &mut l);
         assert!(l.len() > 100);
         for t in l {

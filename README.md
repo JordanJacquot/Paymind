@@ -62,7 +62,7 @@ livrée :
   lancée par son relais, accrochée par le code d'accrochage de Mindset, capturée, puis fermée par « Fermer » et
   « Tout quitter » ;
 - `outils\captures-portefeuille.ps1 -Exe <Mindset.exe d'essai> -Relais <Paymind.exe> -Resultats <dossier> [-Theme <thème>]
-  [-Abonnements <abonnements.json d'essai>] [-Vues 'accueil,fiche:a3,page:ajouter,voir:ajouter'] [-Prefixe <nom>]` :
+  [-Abonnements <abonnements.json d'essai>] [-Vues 'accueil,fiche:a3,ajouter,chercher:mutuel,valider:m:netflix'] [-Prefixe <nom>]` :
   les captures du portefeuille dans un panneau de Mindset de 1180 x 760, vue par vue (aucune erreur de la page) ;
 - `D:\Projets\Mindset\outils\tester-contrat.ps1 -AppliConstruite <dossier>\Paymind -EntreeApps outils\entree-apps-rust.json` :
   tout le contrat avec le vrai code de Mindset, sur l'exe livré (aussi lancé par les tests de GitHub).

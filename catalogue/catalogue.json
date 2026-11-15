@@ -5,57 +5,79 @@
                        {
                            "id":  "films",
                            "nom":  "Films et séries",
-                           "ordre":  1
+                           "ordre":  1,
+                           "fond":  "#D6304A",
+                           "fond_fin":  "#4A0A18"
                        },
                        {
                            "id":  "musique",
                            "nom":  "Musique",
-                           "ordre":  2
+                           "ordre":  2,
+                           "fond":  "#A238FF",
+                           "fond_fin":  "#3A0E66"
                        },
                        {
                            "id":  "jeux",
                            "nom":  "Jeux vidéo",
-                           "ordre":  3
+                           "ordre":  3,
+                           "fond":  "#3E5FC8",
+                           "fond_fin":  "#0E1A48"
                        },
                        {
                            "id":  "telephone",
                            "nom":  "Téléphone et internet",
-                           "ordre":  4
+                           "ordre":  4,
+                           "fond":  "#0091D5",
+                           "fond_fin":  "#002E52"
                        },
                        {
                            "id":  "banque",
                            "nom":  "Banque",
-                           "ordre":  5
+                           "ordre":  5,
+                           "fond":  "#2F6FA8",
+                           "fond_fin":  "#0B2238"
                        },
                        {
                            "id":  "assurances",
                            "nom":  "Assurances et santé",
-                           "ordre":  6
+                           "ordre":  6,
+                           "fond":  "#14A38B",
+                           "fond_fin":  "#063F36"
                        },
                        {
                            "id":  "sport",
                            "nom":  "Sport",
-                           "ordre":  7
+                           "ordre":  7,
+                           "fond":  "#F26B1D",
+                           "fond_fin":  "#5E2604"
                        },
                        {
                            "id":  "presse",
                            "nom":  "Presse et lecture",
-                           "ordre":  8
+                           "ordre":  8,
+                           "fond":  "#C9932A",
+                           "fond_fin":  "#4A3008"
                        },
                        {
                            "id":  "logiciels",
                            "nom":  "Logiciels et stockage",
-                           "ordre":  9
+                           "ordre":  9,
+                           "fond":  "#5A6BE0",
+                           "fond_fin":  "#1A1F5C"
                        },
                        {
                            "id":  "courses",
                            "nom":  "Courses et livraison",
-                           "ordre":  10
+                           "ordre":  10,
+                           "fond":  "#E0457B",
+                           "fond_fin":  "#5A0F2C"
                        },
                        {
                            "id":  "energie",
                            "nom":  "Maison et énergie",
-                           "ordre":  11
+                           "ordre":  11,
+                           "fond":  "#6FA83A",
+                           "fond_fin":  "#22400E"
                        }
                    ],
     "abonnements":  [

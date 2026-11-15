@@ -200,3 +200,42 @@ fn une_adresse_exterieure_ne_peut_rien_appeler() {
     }
     assert_eq!(app.state::<Page>().visible(), None);
 }
+
+/// Étape 4 : l'ajout d'un abonnement ne demande aucune nouvelle commande. Il passe par `action` (`ajouter` avec l'id
+/// d'un abonnement de la liste toute prête, `ajouter-moi` avec `{ nom, prix, rythme, categorie }`), arrive tel quel au
+/// receveur de l'appli, qui le vérifie (src\ajout.rs, `lire`) ; un message mal formé n'arrive jamais.
+#[test]
+fn l_ajout_passe_par_action_sans_nouvelle_commande() {
+    let essai = Essai::new("ajout");
+    let (app, _) = appli_avec_journal();
+    let f = principale(&app, &essai);
+    let recus = Arc::new(Mutex::new(Vec::new()));
+    let pour_receveur = Arc::clone(&recus);
+    app.state::<Page>().recevoir(move |m| pour_receveur.lock().unwrap().push(m));
+    let netflix = json!({ "type": "action", "id": "ajouter", "valeur": "netflix", "ecran": "accueil" });
+    let moi = json!({ "type": "action", "id": "ajouter-moi", "ecran": "accueil",
+        "valeur": { "nom": "Club de foot", "prix": "40", "rythme": "mois", "categorie": "moi" } });
+    for m in [&netflix, &moi] {
+        assert!(get_ipc_response(&f, demande("action", PAGES, json!({ "message": m }))).is_ok(), "{m}");
+    }
+    let recus = recus.lock().unwrap().clone();
+    assert_eq!(recus.len(), 2);
+    for m in &recus {
+        let pont::MessagePage::Action { id, valeur, .. } = m else { panic!("{m:?}") };
+        // (vérifié ensuite par l'appli elle-même : jamais confiance dans la page)
+        assert!(paymind_appli::ajout::lire(id, valeur).is_ok(), "{m:?}");
+    }
+    // Mal formés : refusés par la commande elle-même
+    for message in [
+        json!({ "type": "action", "id": "ajouter", "valeur": "netflix" }),
+        json!({ "type": "action", "id": "ajouter", "valeur": [[[[["netflix"]]]]], "ecran": "accueil" }),
+        json!({ "type": "action", "id": "ajouter", "valeur": "x".repeat(20_000), "ecran": "accueil" }),
+    ] {
+        let r = get_ipc_response(&f, demande("action", PAGES, json!({ "message": message })));
+        assert_eq!(r.err(), Some(json!("refusé")));
+    }
+    // Aucune commande d'ajout à part : hors du manifeste, refusée par les permissions
+    for commande in ["ajouter", "ajouter_abonnement", "enregistrer"] {
+        refusee(get_ipc_response(&f, demande(commande, PAGES, json!({ "id": "netflix" }))), commande);
+    }
+}

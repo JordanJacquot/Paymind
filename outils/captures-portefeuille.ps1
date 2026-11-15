@@ -1,4 +1,4 @@
-﻿# Les captures du portefeuille (étape 3) dans un Mindset de test : la CONSTRUCTION D'ESSAI de Paymind installée dans
+﻿# Les captures du portefeuille (étapes 3 et 4) dans un Mindset de test : la CONSTRUCTION D'ESSAI de Paymind installée dans
 # un faux disque de la suite sous %TEMP%, avec une liste d'abonnements d'essai (ou aucune) et le thème choisi, lancée
 # par son relais, accrochée dans un panneau de 1180 x 760 par le VRAI code d'accrochage de Mindset (MSIntegration de
 # D:\Projets\Mindset\Mindset\fichiers\modules\natif.cs, en lecture seule), puis capturée vue par vue. À lancer
@@ -6,13 +6,19 @@
 #
 #   & '.\outils\sur-bureau.ps1' -Script '.\outils\captures-portefeuille.ps1' -Sortie '.\_test\etape3\captures.txt' `
 #       -Arguments "-Exe '<Mindset.exe d''essai>' -Relais '<Paymind.exe>' -Resultats '<dossier>' -Theme crepuscule `
-#                   -Abonnements '<abonnements.json d''essai>' -Vues 'accueil,fiche:a3,page:ajouter' -Prefixe 'crepuscule'"
+#                   -Abonnements '<abonnements.json d''essai>' -Vues 'accueil,fiche:a3,ajouter' -Prefixe 'crepuscule'"
 #
 # Les vues, dans l'ordre (séparées par des virgules) : « accueil » (l'accueil, fiche fermée), « fiche:<id> » (la fiche
 # d'une carte, ouverte par l'ordre { kit: 'accueil', fiche } que seule la construction d'essai lit dans
 # ordre.demande), « page:<id> » (une page du kit), « voir:<data-k> » (l'accueil, un élément choisi et montré, par
 # exemple « voir:ajouter » : le bas de la liste).
-# Chaque capture est faite par l'exe lui-même (capture.demande) et copiée dans <Resultats>\<Prefixe>-<vue>.png.
+# Depuis l'étape 4 : « ajouter » (l'écran « Ajouter un abonnement », la liste toute prête), « ajouter-voir:<data-k> »
+# (le même, un élément choisi et montré, par exemple « ajouter-voir:a:moi » : le bas de la liste), « chercher:<mots> »
+# (le même, avec cette recherche, des lettres et des espaces), « valider:<data-k> » (un élément choisi comme d'un
+# clic, par exemple « valider:m:netflix » : Netflix ajouté, la page revient sur sa carte), « moi:<nom>:<prix> »
+# (« Un abonnement à moi » ouvert et rempli ; puis « valider:a:moi-ok » l'ajoute).
+# Chaque capture est faite par l'exe lui-même (capture.demande) et copiée dans <Resultats>\<Prefixe>-<vue>.png. À la
+# fin, abonnements.json et etat.json de l'essai sont copiés à côté (<Prefixe>-abonnements.json, <Prefixe>-etat.json).
 #
 # Rien sur le vrai PC : comme essai-dans-mindset.ps1 (dossier d'essai, verrou et signal d'essai, seuls les processus
 # lancés depuis le dossier d'essai sont arrêtés à la fin). Vérifié en plus : aucune erreur de la page au journal.
@@ -146,6 +152,15 @@ try {
         elseif ($v -like 'fiche:*') { Ordre ('{"kit":"accueil","fiche":"' + ($v.Substring(6) -replace '[^\w.-]', '') + '"}') }
         elseif ($v -like 'voir:*') { Ordre '{"kit":"accueil","fermer":true}'; Ordre '{"kit":"aller","ecran":"accueil"}'; Ordre ('{"kit":"accueil","voir":"' + ($v.Substring(5) -replace '[^\w:.-]', '') + '"}') }
         elseif ($v -like 'page:*') { Ordre '{"kit":"accueil","fermer":true}'; Ordre ('{"kit":"aller","ecran":"' + ($v.Substring(5) -replace '[^\w.-]', '') + '"}') }
+        elseif ($v -eq 'ajouter') { Ordre '{"kit":"accueil","fermer":true}'; Ordre '{"kit":"accueil","vue":"ajouter"}' }
+        elseif ($v -like 'ajouter-voir:*') { Ordre '{"kit":"accueil","vue":"ajouter"}'; Ordre ('{"kit":"accueil","voir":"' + ($v.Substring(13) -replace '[^\w:.-]', '') + '"}') }
+        elseif ($v -like 'chercher:*') { Ordre ('{"kit":"accueil","chercher":"' + ($v.Substring(9) -replace '[^\w ]', '') + '"}') }
+        elseif ($v -like 'moi:*') {
+            $m = $v.Substring(4).Split(':')
+            $o = [ordered]@{ kit = 'accueil'; moi = [ordered]@{ nom = ($m[0] -replace '[^\w ]', ''); prix = ($m[1] -replace '[^\d,]', '') } }
+            Ordre ($o | ConvertTo-Json -Compress -Depth 3)
+        }
+        elseif ($v -like 'valider:*') { Ordre ('{"kit":"accueil","valider":"' + ($v.Substring(8) -replace '[^\w:.-]', '') + '"}') }
         else { Echec "vue inconnue : $v"; continue }
         [void](Attendre { $false } 1500)
         Capturer $nom
@@ -172,6 +187,10 @@ foreach ($d in $horsEssai) {
     Verifier ($maintenant -eq $avant[$d]) "rien de créé ni changé hors de l'essai : $d"
 }
 Get-Journal | Set-Content -LiteralPath (Join-Path $Resultats "$Prefixe-journal.txt") -Encoding UTF8
+foreach ($f in 'abonnements.json', 'etat.json') {
+    $c = Join-Path $donnees $f
+    if (Test-Path -LiteralPath $c) { Copy-Item -LiteralPath $c -Destination (Join-Path $Resultats "$Prefixe-$f") -Force }
+}
 [void](Attendre { $false } 1000)
 try { Remove-Item -LiteralPath $racine -Recurse -Force -ErrorAction Stop } catch { Write-Output "Dossier d'essai pas encore effacé : $racine" }
 

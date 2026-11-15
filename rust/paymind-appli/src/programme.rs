@@ -61,6 +61,8 @@ struct Etat {
     donnees: Rc<RefCell<Option<Donnees>>>,
     /// Le jour du portefeuille montré : un nouveau jour, il est refait (« dans 3 jours », « Bientôt », totaux)
     jour: Date,
+    /// Tauri, une fois la fenêtre créée : l'état renvoyé à la page après un ajout
+    app: Option<AppHandle>,
     /// Le dossier de données (construction d'essai : la demande de capture)
     #[cfg(feature = "essai")]
     dossier: PathBuf,
@@ -235,6 +237,7 @@ pub fn lancer() -> ! {
             dossier_mindset: l.dossier_mindset.clone(),
             donnees: Rc::clone(&donnees),
             jour,
+            app: None,
             #[cfg(feature = "essai")]
             dossier: l.dossier_donnees.clone(),
         })
@@ -308,6 +311,7 @@ fn ouvrir_fenetre(app: &App, suite: &Path, donnees: &Path, montree: bool, journa
         let mut e = e.borrow_mut();
         let Some(etat) = e.as_mut() else { return };
         etat.fenetre = Some(fenetre);
+        etat.app = Some(app.handle().clone());
         etat.debut = Instant::now();
         let Etat { vie, systeme, disque, fenetre, .. } = etat;
         if let Some(fenetre) = fenetre.as_mut() {
@@ -385,15 +389,52 @@ impl Etat {
     }
 
     /// Un message du kit. « Retour » depuis l'accueil ramène à la console de Mindset (seulement dans Mindset : sinon
-    /// la demande est seulement notée) ; le reste est noté au journal (étape 1 : aucun geste n'a encore d'effet).
+    /// la demande est seulement notée) ; un ajout (la liste toute prête, « Un abonnement à moi ») est vérifié puis
+    /// enregistré ([`Etat::ajouter`]) ; le reste est noté au journal.
     fn recevoir(&mut self, m: &MessagePage) {
         let ligne = match m {
             MessagePage::Menu if self.vie.dans_mindset() => {
                 crate::pont::demander_menu(&self.dossier_mindset, &mut self.systeme, &mut self.disque)
             }
+            MessagePage::Action { id, valeur, .. } if crate::ajout::est_ajout(id) => {
+                self.ajouter(id, valeur);
+                return;
+            }
             _ => crate::pont::ligne_journal(m),
         };
         self.journal.ecrire(&court(&ligne));
+    }
+
+    /// Un ajout demandé par la page : vérifié ici (jamais confiance dans la page), enregistré dans abonnements.json
+    /// et la carte de Mindset ; puis le portefeuille renvoyé à la page, qui y revient sur la nouvelle carte, avec une
+    /// bulle. Refusé ou pas enregistré : la bulle le dit, la liste ne change pas.
+    fn ajouter(&mut self, id: &str, valeur: &Value) {
+        let Some(app) = self.app.clone() else { return };
+        let page = app.state::<Page>();
+        let ajout = match crate::ajout::lire(id, valeur) {
+            Ok(a) => a,
+            Err(r) => {
+                self.journal.ecrire(&court(&format!("Écran : ajout refusé ({r})")));
+                page.ordre(json!({ "kit": "message", "texte": r }));
+                return;
+            }
+        };
+        // (les données occupées : rien n'est perdu, la personne réessaie)
+        let Ok(mut d) = self.donnees.try_borrow_mut() else {
+            page.ordre(json!({ "kit": "message", "texte": "Paymind est occupée : réessaie dans un instant." }));
+            return;
+        };
+        let Some(d) = d.as_mut() else { return };
+        let jour = heure::maintenant().date();
+        match crate::ajout::ajouter(d, &ajout, jour) {
+            Ok(a) => {
+                self.jour = jour;
+                page.changer(crate::commandes::etat_page(VERSION, &[], &d.abonnements.liste, jour));
+                page.ordre(json!({ "kit": "accueil", "ajoute": a.id }));
+                page.ordre(json!({ "kit": "message", "texte": crate::ajout::message_ajoute(&a), "bravo": true }));
+            }
+            Err(r) => page.ordre(json!({ "kit": "message", "texte": r })),
+        }
     }
 }
 

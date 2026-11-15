@@ -9,7 +9,8 @@ Les logos restent la propriété de leurs marques. Ils servent seulement à reco
 ## Fichier `catalogue.json`
 
 - `format` : 1. `prix_releves_le` : date du relevé.
-- `categories` : `id`, `nom`, `ordre`.
+- `categories` : `id`, `nom`, `ordre`, `fond` et `fond_fin` (le dégradé d'une carte sans logo de cette catégorie, par
+  exemple un abonnement « à moi » rangé là).
 - `abonnements` : `id`, `nom`, `categorie`, `prix_centimes`, `rythme` (`semaine`, `mois`, `trimestre`, `an`), `offre`,
   `logo` (fichier dans `logos/`, vide s'il n'y en a pas), `logo_ratio` (largeur / hauteur du logo), `affichage`,
   `fond` et `fond_fin` (dégradé de la carte, comme la maquette), `texte` (couleur du texte), `prix_a_verifier`,

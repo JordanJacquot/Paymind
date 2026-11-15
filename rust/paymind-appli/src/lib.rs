@@ -1,5 +1,6 @@
 //! Paymind en Rust : la fenêtre de Paymind dans Mindset et son programme. Repris de mindcare-appli : une page qui suit
-//! le thème, la vie avec Mindset, et depuis l'étape 3 le portefeuille de la maquette F.
+//! le thème, la vie avec Mindset, depuis l'étape 3 le portefeuille de la maquette F, et depuis l'étape 4 la liste
+//! toute prête.
 //!
 //! - [`fenetre`] : la fenêtre « principale », créée dans le code (jamais dans tauri.conf.json), cachée et sans
 //!   prendre la main, titre exact « Paymind », dossier WebView2 et options du navigateur de suite-commun
@@ -9,6 +10,9 @@
 //! - [`ecran`] : ce que la page montre (l'état du kit d'écrans de la suite) ;
 //! - [`portefeuille`] : l'accueil de la maquette F (total, « Bientôt », cartes par catégorie, fiches en lecture
 //!   seule), préparé d'après la liste des abonnements et paymind-moteur, dessiné par ui\portefeuille.js ;
+//! - [`catalogue`] : la liste toute prête (catalogue\catalogue.json rangé dans l'exe, vérifié ; ses logos dans
+//!   ui\logos), la recherche sans accents, les logos des cartes ;
+//! - [`ajout`] : la liste toute prête à l'écran, « Un abonnement à moi », l'ajout vérifié et enregistré ;
 //! - [`pont`] : les messages du kit vérifiés, l'habillage du thème, le retour à la console de Mindset ;
 //! - [`pack`] : la réponse du protocole `pack` (les images et polices du thème, règle 6), par suite-commun ;
 //! - [`preparer`] et [`contexte`] : ce que le programme et les tests donnent à Tauri ;
@@ -21,6 +25,8 @@
 
 #![deny(unsafe_code)]
 
+pub mod ajout;
+pub mod catalogue;
 pub mod commandes;
 pub mod ecran;
 #[cfg(feature = "essai")]

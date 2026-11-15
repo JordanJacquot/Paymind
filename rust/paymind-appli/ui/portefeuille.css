@@ -1,7 +1,8 @@
 /* Le portefeuille de Paymind (étape 3) : l'accueil de la maquette F validée par Jordan (maquettes\proposition-f.html),
    dessiné par portefeuille.js à la place des tuiles du kit. Les couleurs de fond, de texte et de ligne viennent du
    thème de la suite (kit.css) ; le vert de Paymind (--pm) marque ce qui est à elle (Ajouter, les choix de la fiche) ;
-   chaque carte a les couleurs de sa catégorie (plus tard, de sa marque). */
+   chaque carte a les couleurs de sa marque (liste toute prête) ou de sa catégorie. Depuis l'étape 4, l'écran
+   « Ajouter un abonnement » (la liste toute prête, « Un abonnement à moi ») est dessiné ici aussi. */
 body { --pm: #22E07A; --pm-fonce: #06140C; --doux-anim: cubic-bezier(.2, .9, .3, 1); }
 
 /* ---------------------------------------------------------------- l'accueil */
@@ -32,6 +33,9 @@ body { --pm: #22E07A; --pm-fonce: #06140C; --doux-anim: cubic-bezier(.2, .9, .3,
 .rond-c { width: 30px; height: 30px; flex: none; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, var(--c1), var(--c2)); overflow: hidden; }
 .rond-c i { font-style: normal; font-weight: 900; font-size: 12px; color: #fff; letter-spacing: -0.3px; }
 .rond-c img { width: 72%; height: 72%; object-fit: contain; }
+.rond-c.r-plaque { background: #fff; }
+.rond-c.r-blanc img { filter: brightness(0) invert(1); }
+.rond-c.r-picto svg { width: 60%; height: 60%; color: #fff; }
 
 .groupes { display: flex; flex-wrap: wrap; gap: 22px 36px; }
 .groupe-c h2 { margin: 0 0 10px; font-size: 13.5px; font-weight: 600; color: var(--doux); letter-spacing: 0.2px; }
@@ -49,11 +53,20 @@ body { --pm: #22E07A; --pm-fonce: #06140C; --doux-anim: cubic-bezier(.2, .9, .3,
   background: radial-gradient(60cqw 60cqw at var(--mx, 30%) var(--my, 20%), rgba(255, 255, 255, 0.24), transparent 70%); }
 .carte.f:hover .c-reflet, .carte.f:focus .c-reflet, .carte.grande .c-reflet { opacity: 1; }
 .c-haut { position: absolute; left: 7.5cqw; right: 6cqw; top: 7cqw; display: flex; align-items: flex-start; justify-content: space-between; gap: 3cqw; }
-.c-logo { display: flex; align-items: center; min-width: 0; }
-.c-logo img { display: block; height: 17cqw; max-width: 56cqw; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25)); }
+.c-logo { display: flex; align-items: center; min-width: 0; max-width: 70cqw; }
+.c-logo img { display: block; height: 17cqw; max-width: 100%; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25)); }
+/* (un logo d'une seule couleur peint en blanc ; un logo en couleurs sur sa petite plaque blanche, comme la maquette) */
+.c-logo.lg-blanc img { filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25)); }
+.c-logo.lg-plaque { padding: 2.4cqw 3.3cqw; border-radius: 2.8cqw; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
+.c-logo.lg-plaque img { filter: none; }
+.c-logo.c-picto { width: 17.9cqw; height: 17.9cqw; border-radius: 4.7cqw; display: grid; place-items: center; background: rgba(255, 255, 255, 0.18); }
+.c-logo.c-picto svg { width: 10.4cqw; height: 10.4cqw; color: #fff; }
 /* (sans logo : une plaque avec les initiales, aux couleurs de la catégorie) */
 .c-logo.c-plaque { min-width: 17cqw; height: 15cqw; padding: 0 3.4cqw; border-radius: 3.2cqw; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); justify-content: center; }
 .c-logo.c-plaque b { font-size: 8.4cqw; font-weight: 900; letter-spacing: -0.2cqw; color: color-mix(in srgb, var(--c1) 70%, var(--c2)); line-height: 1; }
+/* (pas de logo trouvé : le nom de la marque sur une plaque blanche, dans sa couleur) */
+.c-logo.c-nomlogo { max-width: 66cqw; justify-content: flex-start; }
+.c-logo.c-nomlogo b { font-size: 6.6cqw; font-weight: 800; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .c-etq { text-align: right; flex: none; }
 .c-etq span { display: block; font-size: 5.6cqw; font-weight: 700; opacity: 0.92; }
 .c-badge { display: inline-block; padding: 1.2cqw 3cqw; border-radius: 99px; font-size: 5cqw; font-weight: 800; line-height: 1.2; }
@@ -131,9 +144,77 @@ body { --pm: #22E07A; --pm-fonce: #06140C; --doux-anim: cubic-bezier(.2, .9, .3,
 .f-note { margin: 12px 0 0; font-size: 14px; line-height: 1.4; color: var(--doux); white-space: pre-line; overflow-wrap: anywhere; }
 .f-bientot { margin: 14px 0 0; font-size: 13px; color: var(--pale); }
 
+/* Une carte qui vient d'être ajoutée : elle saute un peu, avec un liseré vert */
+.carte.nouvelle { animation: pop 620ms var(--doux-anim); box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45), 0 0 0 2px var(--fond), 0 0 0 4px var(--pm); }
+@keyframes pop { 30% { transform: scale(0.92); } 70% { transform: scale(1.05); } }
+
+/* ---------------------------------------------------------------- « Ajouter un abonnement » (la liste toute prête) */
+.cat-in { padding: 22px 48px 40px; }
+.cat-tete { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.retour-c { display: inline-flex; align-items: center; gap: 10px; height: 46px; padding: 0 14px 0 12px; border-radius: 99px; border: 1px solid var(--ligne); background: var(--carte); font-size: 15px; font-weight: 600; transition: border-color 200ms ease; }
+.retour-c svg { width: 20px; height: 20px; }
+.retour-c:hover, .retour-c:focus { border-color: var(--pm); }
+.compte-c { min-width: 24px; height: 24px; padding: 0 7px; box-sizing: border-box; border-radius: 99px; background: rgba(34, 224, 122, 0.16); color: var(--pm); font-size: 13px; font-weight: 800; display: grid; place-items: center; }
+.cat-tete h1 { margin: 0 0 0 6px; font-size: 26px; font-weight: 800; }
+.recherche { margin-left: auto; display: flex; align-items: center; gap: 10px; width: 340px; max-width: 100%; height: 48px; padding: 0 18px; box-sizing: border-box; border-radius: 99px; background: var(--fond2); border: 1px solid var(--ligne); transition: border-color 200ms ease; }
+.recherche:focus-within { border-color: var(--pm); }
+.recherche svg { width: 19px; height: 19px; color: var(--doux); flex: none; }
+.recherche input { flex: 1; min-width: 0; border: 0; background: transparent; outline: none; font-size: 15.5px; color: var(--texte); font-family: inherit; }
+.recherche input::placeholder { color: var(--pale); }
+.rien-c { color: var(--doux); font-size: 16px; padding: 30px 0; text-align: center; margin: 0; }
+.cat-sec { margin-bottom: 24px; }
+.cat-sec[hidden], .mini[hidden], .rien-c[hidden] { display: none; }
+.cat-sec h2 { margin: 0 0 12px; font-size: 13.5px; font-weight: 600; color: var(--doux); letter-spacing: 0.2px; }
+.cat-rang { display: flex; flex-wrap: wrap; gap: 16px 14px; }
+/* (une petite carte : le logo seul, le nom et le prix dessous ; « Déjà là » quand on l'a déjà) */
+.mini { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 7px; width: 150px; text-align: left; border-radius: 12px; transition: transform 220ms var(--doux-anim); }
+.mini:hover, .mini:focus { transform: translateY(-4px); outline: none; }
+.mini .carte { --l: 150px; border-radius: 10px; }
+.mini:hover .carte, .mini:focus .carte { box-shadow: 0 14px 28px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.2); }
+.mini:focus-visible .carte { box-shadow: 0 14px 28px rgba(0, 0, 0, 0.55), 0 0 0 2px var(--fond), 0 0 0 4px var(--S); }
+.mini:hover .c-reflet, .mini:focus .c-reflet { opacity: 1; }
+.c-etq .m-verif { display: inline-block; padding: 1.3cqw 4cqw; border-radius: 6cqw; background: rgba(0, 0, 0, 0.35); font-size: 6.3cqw; font-weight: 700; opacity: 0.85; white-space: nowrap; }
+.mini .deja { position: absolute; left: 8px; top: 66px; z-index: 2; display: none; align-items: center; gap: 4px; padding: 3px 8px 3px 6px; border-radius: 99px; background: rgba(6, 5, 15, 0.78); color: var(--pm); font-size: 11.5px; font-weight: 700; }
+.mini .deja svg { width: 12px; height: 12px; }
+.mini.a .deja { display: inline-flex; }
+.mini .leg { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; padding: 0 3px; font-size: 13px; }
+.mini .leg b { font-weight: 600; line-height: 1.2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: break-word; min-width: 0; }
+.mini .leg .px { color: var(--texte); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mini .leg2 { display: flex; justify-content: space-between; gap: 6px; padding: 0 3px; margin-top: -4px; font-size: 11.5px; color: var(--pale); }
+.mini .leg2 span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini .leg2 span:last-child { white-space: nowrap; }
+.mini.pop .carte { animation: pop 520ms var(--doux-anim); }
+.perso-b { width: 200px; aspect-ratio: 1.586; border-radius: 10px; border: 2px dashed color-mix(in srgb, var(--pm) 35%, var(--ligne)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--doux); font-size: 14px; font-weight: 700; text-align: center; padding: 0 10px; transition: all 200ms ease; }
+.perso-b svg { width: 24px; height: 24px; color: var(--pm); }
+.perso-b:hover, .perso-b:focus { border-color: var(--pm); color: var(--texte); background: rgba(34, 224, 122, 0.06); }
+.cat-note { margin: 8px 0 0; font-size: 13px; color: var(--pale); }
+/* (« Un abonnement à moi » : le nom, le prix, le rythme et la catégorie) */
+.moi-f { width: min(760px, 100%); padding: 18px 22px; border-radius: var(--r); background: var(--carte); border: 1px solid color-mix(in srgb, var(--ligne) 80%, transparent); box-sizing: border-box; }
+.moi-ligne { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.champ-m { display: flex; flex-direction: column; gap: 8px; flex: 1 1 300px; min-width: 0; }
+.champ-m.prix { flex: 0 0 170px; }
+.champ-m > span:first-child { font-size: 13px; color: var(--doux); }
+.champ-m input { height: 46px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--ligne); background: var(--fond2); color: var(--texte); font-size: 16px; font-family: inherit; outline: none; box-sizing: border-box; width: 100%; min-width: 0; }
+.champ-m input:focus { border-color: var(--pm); }
+.champ-m input::placeholder { color: var(--pale); }
+.avec-euro { position: relative; display: block; }
+.avec-euro input { padding-right: 34px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.avec-euro em { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-style: normal; color: var(--doux); font-weight: 700; }
+.choix-m { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.choix-m button { padding: 8px 14px; border-radius: 99px; border: 1px solid var(--ligne); background: var(--fond2); color: var(--doux); font-size: 13.5px; font-weight: 700; transition: border-color 150ms ease; }
+.choix-m button:hover, .choix-m button:focus { border-color: var(--pm); color: var(--texte); }
+.choix-m button.oui { background: var(--pm); border-color: var(--pm); color: var(--pm-fonce); }
+.moi-err { min-height: 18px; margin: 0 0 8px; font-size: 14px; color: var(--orange); }
+.moi-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-m { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 22px; border-radius: 99px; font-size: 15px; font-weight: 800; border: 1px solid var(--ligne); background: var(--carte2); color: var(--texte); transition: transform 150ms ease, filter 150ms ease; }
+.btn-m svg { width: 18px; height: 18px; }
+.btn-m.plein { border-color: transparent; background: var(--pm); color: var(--pm-fonce); }
+.btn-m:hover, .btn-m:focus { transform: translateY(-2px); filter: brightness(1.1); }
+
 @media (max-width: 1060px) { .pas .pas-nom { display: none; } }
 @media (max-width: 900px) {
-  .pf-in { padding: 20px 26px 34px; }
+  .pf-in, .cat-in { padding: 20px 26px 34px; }
+  .recherche { width: 100%; margin-left: 0; }
   .bientot { margin-left: 0; justify-content: flex-start; }
 }
 @media (max-width: 760px) {
@@ -141,4 +222,4 @@ body { --pm: #22E07A; --pm-fonce: #06140C; --doux-anim: cubic-bezier(.2, .9, .3,
   .f-col + .f-col { border-left: 0; border-top: 1px solid color-mix(in srgb, var(--ligne) 80%, transparent); }
   .fermer-f { position: static; margin: 0 0 14px; align-self: flex-start; }
 }
-@media (prefers-reduced-motion: reduce) { .pf, .carte, .fiche, .scene-pf, .ajouter { animation: none !important; transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { .pf, .carte, .fiche, .scene-pf, .ajouter, .mini, .perso-b, .btn-m { animation: none !important; transition: none !important; } }
