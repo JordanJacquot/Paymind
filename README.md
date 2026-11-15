@@ -11,7 +11,7 @@ Les logos des marques restent la propriété de leurs marques ; ils servent seul
 
 ## Plan
 
-- [ ] **1. Paymind apparaît dans Mindset** : une page vide s'ouvre dans l'onglet de Mindset, suit le thème et se ferme
+- [x] **1. Paymind apparaît dans Mindset** : une page vide s'ouvre dans l'onglet de Mindset, suit le thème et se ferme
   proprement. Vérifié par les essais automatiques (repris de Mindcare) et un essai dans un Mindset de test.
 - [ ] **2. Le calcul des comptes** : chaque rythme (semaine, mois, trimestre, an) ramené au mois et à l'année, la date du
   prochain paiement qui avance seule après un renouvellement automatique, les totaux par catégorie, la liste « Bientôt » ;
