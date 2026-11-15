@@ -1,4 +1,6 @@
 target/
 /_test/
+# Le zip d'une publication et sa signature (outils\publier.ps1) : seulement joints à la Release, jamais dans le dépôt
+/release/
 maquettes/capture-*.png
 catalogue/_apercu.png

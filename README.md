@@ -70,3 +70,27 @@ livrée :
 Exemple (chemins complets : les scripts les lisent depuis le dossier du processus, pas celui de PowerShell) :
 `& 'D:\Projets\Paymind\outils\sur-bureau.ps1' -Script 'D:\Projets\Paymind\outils\essai-dans-mindset.ps1' -Sortie 'D:\Projets\Paymind\_test\essai.txt' -Arguments "..."`.
 L'entrée de Paymind pour la liste des applis de Mindset est dans `outils\entree-apps-rust.json`.
+
+## Publier une version
+
+Le zip publié n'est jamais construit sur le PC : GitHub le construit depuis le commit (`.github\workflows\release.yml`),
+après ses tests, et l'atteste. Dans PowerShell, une fois tout commité :
+
+```
+& 'D:\Projets\Paymind\outils\publier.ps1' -Version 0.1.0 -Notes "Ce qui change, en mots simples"
+```
+
+`publier.ps1` écrit le numéro dans `rust\paymind-appli\Cargo.toml`, commite « Paymind 0.1.0 (Rust) » et l'envoie,
+attend la construction de GitHub (`outils\zip-rust-github.ps1` : tests au vert, attestation vérifiée), revérifie le zip
+(`outils\verifier-zip-rust.ps1`), le signe avec la clé de la suite, puis crée le tag et la Release. `-Preversion` en fait
+une version d'essai. Les notes ne citent jamais un thème perso.
+
+Essai à blanc (rien n'est commité, envoyé, tagué ni publié ; signature avec une clé jetable), avec un zip fait sur le PC
+par `outils\zip-rust.ps1` :
+
+```
+& 'D:\Projets\Paymind\outils\publier.ps1' -Essai -ZipLocal '<dossier>\Paymind.zip'
+```
+
+La politique de signature et la confidentialité sont dans [CODE_SIGNING.md](CODE_SIGNING.md). Licence MIT
+([LICENSE](LICENSE)).
