@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Paymind</title>
 <link rel="stylesheet" href="kit.css">
+<link rel="stylesheet" href="portefeuille.css">
 </head>
 <body>
 <!-- Le kit d'écrans de la suite (copie du kit commun, voir kit.js) : rien n'est dessiné ici, Rust envoie l'état -->
@@ -27,8 +28,10 @@
 <div id="questionM"></div>
 <!-- (la seule écriture en ligne : la carte des modules de la 3D ; Tauri ajoute son empreinte à la CSP) -->
 <script type="importmap">{ "imports": { "three": "./three/three.module.js" } }</script>
-<!-- Le pont vers Rust d'abord (window.kitPont), puis le kit qui s'en sert -->
+<!-- Le pont vers Rust d'abord (window.kitPont), puis l'accueil de Paymind (window.kitAccueil : le portefeuille, posé
+     avant que le kit ne dessine son premier écran), puis le kit qui s'en sert -->
 <script src="ipc.js"></script>
+<script src="portefeuille.js"></script>
 <script src="kit.js"></script>
 <script type="module" src="plasma.js"></script>
 </body>

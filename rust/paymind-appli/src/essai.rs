@@ -12,7 +12,8 @@
 //!
 //! En plus, dans cette construction : HKLM n'est jamais lu et seul ce programme peut être lancé
 //! (windows\systeme.rs), le signal du vrai Mindset n'est jamais levé (pont.rs) ; un fichier `capture.demande` dans
-//! le dossier de données fait écrire l'image de la fenêtre dans `capture.png`, à côté.
+//! le dossier de données fait écrire l'image de la fenêtre dans `capture.png`, à côté ; un fichier `ordre.demande`
+//! (un ordre au kit en JSON) est envoyé à la page (ouvrir une page ou la fiche d'une carte, pour les captures).
 
 use std::path::{Path, PathBuf};
 
@@ -21,6 +22,8 @@ use paymind_vie::Noms;
 /// La demande de capture et l'image, dans le dossier de données d'essai.
 pub const CAPTURE_DEMANDE: &str = "capture.demande";
 pub const CAPTURE: &str = "capture.png";
+/// Un ordre au kit (JSON) à envoyer à la page, pour les captures (ouvrir une page, la fiche d'une carte).
+pub const ORDRE_DEMANDE: &str = "ordre.demande";
 
 /// Ce que l'essai donne.
 #[derive(Debug, Clone, PartialEq, Eq)]

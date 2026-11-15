@@ -25,6 +25,7 @@ use std::thread::LocalKey;
 use std::time::{Duration, Instant};
 
 use paymind_donnees::{Donnees, Journal};
+use paymind_moteur::Date;
 use paymind_vie::{
     Depart, DisqueReel, Environnement, Fin, Lancement, Monde, Reglages, Taille, Vie, demarrage_demande, demarrer,
     theme_choisi,
@@ -56,6 +57,10 @@ struct Etat {
     journal: Journal,
     /// Le dossier de Mindset (retour à sa console)
     dossier_mindset: PathBuf,
+    /// Les données (la liste des abonnements montrée par le portefeuille)
+    donnees: Rc<RefCell<Option<Donnees>>>,
+    /// Le jour du portefeuille montré : un nouveau jour, il est refait (« dans 3 jours », « Bientôt », totaux)
+    jour: Date,
     /// Le dossier de données (construction d'essai : la demande de capture)
     #[cfg(feature = "essai")]
     dossier: PathBuf,
@@ -193,10 +198,15 @@ pub fn lancer() -> ! {
     for r in &theme.raisons {
         journal.ecrire(&format!("Thème : {r}"));
     }
+    // Le portefeuille de l'accueil, d'après la liste lue (abonnements.json) et le jour
+    let jour = heure::maintenant().date();
+    let etat_depart = crate::commandes::etat_page(VERSION, &[], &d.abonnements.liste, jour);
+    journal
+        .ecrire(&format!("Portefeuille : {}", paymind_moteur::textes::nombre_abonnements(d.abonnements.liste.len())));
     *donnees.borrow_mut() = Some(d);
 
     let pour_page = journal.clone();
-    let page = Page::new(crate::commandes::etat_page(VERSION, &[]), move |t| pour_page.ecrire(t));
+    let page = Page::new(etat_depart, move |t| pour_page.ecrire(t));
     // (les couleurs du thème et d'un pack viennent de l'habillage, comme Get-PackVue de vue.ps1)
     page.habiller(crate::pont::Habillage::depuis(&theme, crate::pont::soir(heure::maintenant().heure)));
     let pour_receveur = journal.clone();
@@ -223,6 +233,8 @@ pub fn lancer() -> ! {
             fin: None,
             journal: journal.clone(),
             dossier_mindset: l.dossier_mindset.clone(),
+            donnees: Rc::clone(&donnees),
+            jour,
             #[cfg(feature = "essai")]
             dossier: l.dossier_donnees.clone(),
         })
@@ -336,9 +348,12 @@ fn tour(app: &AppHandle) {
         if fin.is_none() {
             // (une taille manquée par `Resized`, la fenêtre occupée, est vue ici)
             vie.ajuster_echelle(&mut Monde { systeme, disque, fenetre });
+            etat.nouveau_jour(app);
         }
         #[cfg(feature = "essai")]
         capture_demandee(etat);
+        #[cfg(feature = "essai")]
+        ordre_demande(etat, app);
         etat.fin = fin;
         fin
     });
@@ -353,6 +368,22 @@ fn ligne_courte(m: &MessagePage) -> String {
 }
 
 impl Etat {
+    /// Minuit passé : le portefeuille est refait pour le nouveau jour (les délais, « Bientôt », les abonnements à
+    /// renouveler) et renvoyé à la page.
+    fn nouveau_jour(&mut self, app: &AppHandle) {
+        let jour = heure::maintenant().date();
+        if jour == self.jour {
+            return;
+        }
+        // (les données occupées : au prochain pas)
+        let Ok(d) = self.donnees.try_borrow() else { return };
+        let Some(d) = d.as_ref() else { return };
+        self.jour = jour;
+        let etat = crate::commandes::etat_page(VERSION, &[], &d.abonnements.liste, jour);
+        app.state::<Page>().changer(etat);
+        self.journal.ecrire(&format!("Portefeuille : nouveau jour ({})", jour.iso()));
+    }
+
     /// Un message du kit. « Retour » depuis l'accueil ramène à la console de Mindset (seulement dans Mindset : sinon
     /// la demande est seulement notée) ; le reste est noté au journal (étape 1 : aucun geste n'a encore d'effet).
     fn recevoir(&mut self, m: &MessagePage) {
@@ -439,6 +470,26 @@ fn capture_demandee(etat: &Etat) {
             Err(e) => etat.journal.ecrire(&format!("Essai : capture non écrite ({e})")),
         },
         None => etat.journal.ecrire("Essai : capture impossible"),
+    }
+}
+
+/// Construction d'essai : un ordre au kit demandé (`ordre.demande`, un objet JSON `{ "kit": ... }`) est envoyé à la
+/// page, comme l'appli le ferait (ouvrir une page, la fiche d'une carte), pour les captures. Autre chose qu'un ordre
+/// n'est pas envoyé ([`Page::ordre`]).
+#[cfg(feature = "essai")]
+fn ordre_demande(etat: &Etat, app: &AppHandle) {
+    let demande = etat.dossier.join(crate::essai::ORDRE_DEMANDE);
+    if !demande.is_file() {
+        return;
+    }
+    let texte = std::fs::read_to_string(&demande).unwrap_or_default();
+    let _ = std::fs::remove_file(&demande);
+    match serde_json::from_str::<Value>(texte.trim_start_matches('\u{feff}')) {
+        Ok(ordre) => {
+            etat.journal.ecrire(&format!("Essai : ordre {}", court(&ordre.to_string())));
+            app.state::<Page>().ordre(ordre);
+        }
+        Err(e) => etat.journal.ecrire(&format!("Essai : ordre illisible ({e})")),
     }
 }
 

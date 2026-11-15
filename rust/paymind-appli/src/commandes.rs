@@ -5,18 +5,19 @@
 
 use std::sync::{Arc, Mutex, MutexGuard};
 
+use paymind_moteur::{Abonnement, Date};
 use serde_json::Value;
 use tauri::State;
 use tauri::ipc::Channel;
 
 use crate::pont::{self, Habillage, MessagePage};
 
-/// L'état de départ du kit ([`crate::ecran::etat`]), et les couleurs du thème s'il y en a (les variables CSS de
-/// `suite_commun::themes::Theme::variables_css` : `P`, `S`, `T`, `fond`, `fond2` ; une variable au nom ou à la couleur
-/// mal écrits n'est pas passée, la page vérifie aussi). Le thème, les couleurs d'un pack et ses images s'ajoutent par
-/// [`Page::habiller`].
-pub fn etat_page(version: &str, variables: &[(&str, String)]) -> Value {
-    let mut e = crate::ecran::etat(version);
+/// L'état du kit ([`crate::ecran::etat`] : le portefeuille de la liste ce jour-là), et les couleurs du thème s'il y en
+/// a (les variables CSS de `suite_commun::themes::Theme::variables_css` : `P`, `S`, `T`, `fond`, `fond2` ; une
+/// variable au nom ou à la couleur mal écrits n'est pas passée, la page vérifie aussi). Le thème, les couleurs d'un
+/// pack et ses images s'ajoutent par [`Page::habiller`].
+pub fn etat_page(version: &str, variables: &[(&str, String)], liste: &[Abonnement], aujourdhui: Date) -> Value {
+    let mut e = crate::ecran::etat(version, liste, aujourdhui);
     let couleurs = pont::couleurs_json(variables);
     if !couleurs.is_empty() {
         e["couleurs"] = Value::Object(couleurs);
@@ -167,14 +168,16 @@ mod tests {
     #[test]
     fn etat_page_avec_et_sans_theme() {
         let theme = suite_commun::themes::Theme::neon();
-        let e = etat_page("0.1.0", &theme.variables_css());
+        let auj = Date::nouvelle(2026, 11, 15).unwrap();
+        let e = etat_page("0.1.0", &theme.variables_css(), &[], auj);
         assert_eq!(e["app"], json!({ "nom": "Paymind", "version": "0.1.0", "logo": "logo.svg" }));
         assert_eq!(
             e["couleurs"],
             json!({ "P": "#00E5FF", "S": "#B04BFF", "T": "#FF2EB5", "fond": "#06050F", "fond2": "#0C0920" })
         );
-        let e = etat_page("0.1.0", &[]);
+        let e = etat_page("0.1.0", &[], &[], auj);
         assert!(e.get("couleurs").is_none());
+        assert_eq!(e["accueil"]["perso"]["vide"], true);
     }
 
     #[test]

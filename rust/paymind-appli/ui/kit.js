@@ -16,7 +16,14 @@
 //               chargement remplace le petit rond de la pastille « en cours ». Les ronds du haut ne changent jamais
 //               (couleurs seulement) et, avec ce bloc, il n'y a plus de dessin en bas.
 //   accueil   : { tuiles: [{ id, nom, icone | image | gros, petit, sous, couleur, fond, alerte }],
-//                 ronds: [{ id, nom, icone, couleur }] }
+//                 ronds: [{ id, nom, icone, couleur }], perso }
+//               perso (facultatif) : un accueil que l'appli dessine elle-même à la place des tuiles (Paymind : le
+//               portefeuille). La page pose alors window.kitAccueil = { dessiner(hote, perso, outils), valider(el),
+//               retour(), ordre(o) } : dessiner remplit #ecran (outils : focus, anime, esc, ico, urlSure, couleur,
+//               action, aller, son) ; un élément « .f » avec data-perso est validé par valider(el) (clic, A, Entrée) ;
+//               retour() rend true s'il a fermé quelque chose (sinon, Retour depuis l'accueil revient au menu) ;
+//               l'ordre { kit: 'accueil', ... } de l'appli lui est passé. Le kit garde l'en-tête, le bas, les flèches
+//               et les sons ; pas de 3D sur cet accueil.
 //               Les tuiles sont aussi les onglets du haut ; les ronds, les petites icônes à droite du haut.
 //               Une tuile ou un rond ouvre la page du même id si elle existe ; sinon il envoie son action.
 //   pc        : { id, texte, icone }                  la pastille « Ton PC » du haut (« Portable HP »), à droite avant
@@ -272,6 +279,7 @@
     else if (d.kit === 'mesures') kit.mesures(d.valeurs);
     else if (d.kit === 'occupe') kit.occupe(d.texte);
     else if (d.kit === 'question') kit.question(d);
+    else if (d.kit === 'accueil') window.kitAccueil?.ordre?.(d);
     else if (!d.kit) kit.etat(d);
   });
 
@@ -404,8 +412,14 @@
   }
 
   // ---------------------------------------------------------------- l'accueil : la rangée de tuiles
+  // (un accueil dessiné par l'appli elle-même : voir « perso » en tête de ce fichier)
+  const accueilPerso = () => nav.ecran === 'accueil' && !!(E.accueil?.perso && window.kitAccueil?.dessiner);
   function accueil(focus, anime) {
     nav.ecran = 'accueil'; enTete(); direEcran();
+    if (accueilPerso()) {
+      window.kitAccueil.dessiner(ecran, E.accueil.perso, { focus, anime, esc, ico, urlSure, couleur, action, aller, son });
+      return;
+    }
     const t = E.accueil?.tuiles || [];
     let sel = nav.sel;
     if (focus && focus.startsWith('t:')) { const k = t.findIndex((x) => `t:${x.id}` === focus); if (k >= 0) sel = k; }
@@ -782,6 +796,7 @@
   }
   function retour() {
     son.retour();
+    if (accueilPerso() && window.kitAccueil.retour?.()) return;
     if (nav.ecran === 'accueil') { envoyer({ type: 'menu' }); return; }
     const p = E.pages?.[nav.ecran];
     if (p?.retour === 'appli') { envoyer({ type: 'action', id: 'retour', ecran: nav.ecran }); return; }
@@ -794,6 +809,7 @@
   function valider(el) {
     if (!el) return;
     const d = el.dataset;
+    if (d.perso !== undefined) { window.kitAccueil?.valider?.(el); return; }
     if (d.retour) { retour(); return; }
     if (d.tuile !== undefined) { ouvrirTuile(+d.tuile); return; }
     if (d.rond !== undefined) { const r = E.accueil.ronds[+d.rond]; son.ok(); if (E.pages?.[r.id]) aller(r.id); else action(r.id); return; }
@@ -853,7 +869,7 @@
     const fin = () => { el.classList.remove('appui'); removeEventListener('pointerup', fin, true); removeEventListener('pointercancel', fin, true); };
     addEventListener('pointerup', fin, true); addEventListener('pointercancel', fin, true);
   });
-  document.getElementById('aideA').addEventListener('click', () => { if (nav.ecran === 'accueil' && plasma()) ouvrirTuile(nav.sel); else valider(document.activeElement?.closest?.('.f')); });
+  document.getElementById('aideA').addEventListener('click', () => { if (nav.ecran === 'accueil' && plasma() && !accueilPerso()) ouvrirTuile(nav.sel); else valider(document.activeElement?.closest?.('.f')); });
   document.getElementById('aideB').addEventListener('click', retour);
   // Le logo et le nom ramènent à l'accueil, de n'importe quelle page
   document.getElementById('marque').addEventListener('click', () => { if (nav.ecran !== 'accueil') { son.retour(); aller('accueil'); } });
@@ -881,12 +897,12 @@
     const dans = e.target.tagName === 'INPUT', k = { ArrowRight: 'd', ArrowLeft: 'g', ArrowDown: 'b', ArrowUp: 'h' }[e.key], touche = toucheManette(e);
     const enHaut = !!document.activeElement?.closest?.('#haut');
     // L'accueil en 3D : gauche et droite font défiler la rangée, A ouvre la tuile du milieu, haut va aux onglets
-    if (nav.ecran === 'accueil' && plasma() && !enHaut && !dans) {
+    if (nav.ecran === 'accueil' && plasma() && !accueilPerso() && !enHaut && !dans) {
       if (k === 'd' || k === 'g') { e.preventDefault(); plasma().deplacer(k === 'd' ? 1 : -1); return; }
       if (k === 'h') { e.preventDefault(); document.querySelector('#onglets .f')?.focus(); return; }
       if (touche === 'Enter') { e.preventDefault(); ouvrirTuile(nav.sel); return; }
     }
-    if (nav.ecran === 'accueil' && plasma() && enHaut && k === 'b') { e.preventDefault(); document.activeElement.blur(); return; }
+    if (nav.ecran === 'accueil' && plasma() && !accueilPerso() && enHaut && k === 'b') { e.preventDefault(); document.activeElement.blur(); return; }
     if (k && !(dans && (k === 'd' || k === 'g'))) { e.preventDefault(); voisin(k); return; }
     if (touche === 'Enter') { e.preventDefault(); valider(document.activeElement?.closest?.('.f')); return; }
     if (touche === 'Escape' || (e.key === 'Backspace' && !dans)) { e.preventDefault(); retour(); }

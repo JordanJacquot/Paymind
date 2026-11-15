@@ -41,6 +41,8 @@ suite-commun.workspace = true
 # La vie de l'appli avec Mindset (démarrage, verrou, surveillances), ses données (dossier, journal, etat.json, réglages)
 paymind-vie = { path = "../paymind-vie" }
 paymind-donnees = { path = "../paymind-donnees" }
+# Le calcul des comptes (totaux, « Bientôt », textes de l'écran) : le portefeuille de l'accueil (src\portefeuille.rs)
+paymind-moteur = { path = "../paymind-moteur" }
 
 # Ce qui parle à Windows (verrou, signal, fenêtre, registre, heure, capture de l'essai). La même version que wry, tao
 # et webview2-com, et que le Rust de Mindset et de Mindcare.

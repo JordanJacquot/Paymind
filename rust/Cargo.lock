@@ -2090,6 +2090,7 @@ name = "paymind-appli"
 version = "0.1.0"
 dependencies = [
  "paymind-donnees",
+ "paymind-moteur",
  "paymind-vie",
  "serde_json",
  "suite-commun",

@@ -1,86 +1,77 @@
-//! Ce que la page de Paymind montre : l'état du kit d'écrans de la suite (format en tête de ui\kit.js). Étape 1 : une
-//! seule tuile « Mes abonnements » et sa page, qui disent que les abonnements arrivent bientôt. Le portefeuille de la
-//! maquette F viendra aux étapes 3 à 5.
+//! Ce que la page de Paymind montre : l'état du kit d'écrans de la suite (format en tête de ui\kit.js).
+//!
+//! Depuis l'étape 3, l'accueil est le portefeuille de la maquette F (src\portefeuille.rs, dessiné par
+//! ui\portefeuille.js à la place des tuiles du kit : bloc `accueil.perso`). Le kit garde l'en-tête, le bas, le
+//! clavier et la manette, les sons et les pages : « Ajouter un abonnement » (bientôt, étape 4) et « Bientôt » (tous les
+//! paiements des 30 prochains jours).
 //!
 //! Tous les textes vont au kit tels quels (il les échappe) : en français simple, sans tiret long ni demi-cadratin.
 
-use serde_json::{Value, json};
+use paymind_moteur::{Abonnement, Date};
+use serde_json::{Map, Value, json};
 
-/// L'id de la tuile et de sa page.
-pub const ABONNEMENTS: &str = "abonnements";
-/// La phrase de l'accueil et de la page, tant qu'il n'y a rien d'autre à montrer.
-pub const BIENTOT: &str = "Tes abonnements arriveront ici bientôt.";
+use crate::portefeuille::{self, PAGE_AJOUTER, PAGE_BIENTOT};
 
-/// L'état de la page : le nom, la version et le logo de l'appli, l'accueil (une tuile) et sa page. Le thème, les
-/// couleurs d'un pack et ses images s'ajoutent par l'habillage ([`crate::Page::habiller`]).
-pub fn etat(version: &str) -> Value {
+/// L'état de la page : le nom, la version et le logo de l'appli, l'accueil (le portefeuille de la liste ce jour-là)
+/// et les pages. Le thème, les couleurs d'un pack et ses images s'ajoutent par l'habillage
+/// ([`crate::Page::habiller`]).
+pub fn etat(version: &str, liste: &[Abonnement], aujourdhui: Date) -> Value {
+    let mut pages = Map::new();
+    pages.insert(PAGE_AJOUTER.into(), portefeuille::page_ajouter());
+    if let Some(p) = portefeuille::page_bientot(liste, aujourdhui) {
+        pages.insert(PAGE_BIENTOT.into(), p);
+    }
     json!({
         "app": { "nom": crate::NOM_APPLI, "version": version, "logo": "logo.svg" },
         "accueil": {
-            "tuiles": [
-                { "id": ABONNEMENTS, "nom": "Mes abonnements", "icone": "euro", "sous": BIENTOT, "couleur": "P" },
-            ],
+            // (aucune tuile : le portefeuille prend toute la place, et le haut n'a pas d'onglets)
+            "tuiles": [],
             "ronds": [],
+            "perso": portefeuille::portefeuille(liste, aujourdhui),
         },
-        "pages": {
-            ABONNEMENTS: {
-                "titre": "Mes abonnements",
-                "sous": BIENTOT,
-                "icone": "euro",
-                "couleur": "P",
-                "module": {
-                    "icone": "euro",
-                    "couleur": "P",
-                    "titre": "Bientôt",
-                    "texte": "Paymind fera le compte de tes abonnements et te préviendra avant chaque paiement.",
-                },
-                "blocs": [
-                    { "type": "texte", "texte": BIENTOT },
-                    { "type": "note", "texte": "Tout reste sur ce PC : rien n'est envoyé sur Internet." },
-                ],
-            },
-        },
+        "pages": pages,
     })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use paymind_moteur::Rythme;
 
-    /// Tous les textes d'une valeur (récursivement).
-    fn textes(v: &Value, l: &mut Vec<String>) {
-        match v {
-            Value::String(s) => l.push(s.clone()),
-            Value::Array(a) => a.iter().for_each(|x| textes(x, l)),
-            Value::Object(o) => o.values().for_each(|x| textes(x, l)),
-            _ => {}
-        }
+    fn d(a: i32, m: u32, j: u32) -> Date {
+        Date::nouvelle(a, m, j).unwrap()
     }
 
     #[test]
-    fn une_tuile_et_sa_page() {
-        let e = etat("0.1.0");
+    fn le_portefeuille_et_ses_pages() {
+        let auj = d(2026, 11, 15);
+        let e = etat("0.1.0", &[], auj);
         assert_eq!(e["app"], json!({ "nom": "Paymind", "version": "0.1.0", "logo": "logo.svg" }));
-        let tuiles = e["accueil"]["tuiles"].as_array().unwrap();
-        assert_eq!(tuiles.len(), 1);
-        assert_eq!(tuiles[0]["id"], ABONNEMENTS);
-        assert_eq!(e["pages"][ABONNEMENTS]["blocs"][0]["texte"], BIENTOT);
-    }
-
-    /// Règle de la suite : aucun tiret long ni demi-cadratin, aucun HTML (le kit écrit les textes tels quels).
-    #[test]
-    fn textes_simples() {
-        let mut l = Vec::new();
-        textes(&etat("0.1.0"), &mut l);
-        for t in l {
-            assert!(!t.contains(['\u{2013}', '\u{2014}', '<', '>']), "{t}");
+        assert_eq!(e["accueil"]["tuiles"], json!([]));
+        assert_eq!(e["accueil"]["perso"]["vide"], true);
+        assert_eq!(e["accueil"]["perso"]["ajouter"], PAGE_AJOUTER);
+        // La liste vide : « Ajouter » seulement
+        assert_eq!(e["pages"].as_object().unwrap().keys().collect::<Vec<_>>(), [PAGE_AJOUTER]);
+        let l = vec![Abonnement::nouveau("a1", "Netflix", 1349, Rythme::Mois, d(2026, 11, 18))];
+        let e = etat("0.1.0", &l, auj);
+        assert_eq!(e["accueil"]["perso"]["vide"], false);
+        assert_eq!(e["pages"].as_object().unwrap().keys().collect::<Vec<_>>(), [PAGE_AJOUTER, PAGE_BIENTOT]);
+        // (chaque page a ce que le kit attend : un titre, des blocs)
+        for (_, p) in e["pages"].as_object().unwrap() {
+            assert!(p["titre"].is_string() && p["blocs"].is_array());
         }
     }
 
-    /// Le logo de l'état est bien livré avec les pages (ui\).
+    /// Le logo de l'état est bien livré avec les pages (ui\), et la page charge le portefeuille.
     #[test]
-    fn le_logo_existe() {
+    fn le_logo_et_le_portefeuille_existent() {
         let ui = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui");
-        assert!(ui.join(etat("0.1.0")["app"]["logo"].as_str().unwrap()).is_file());
+        let e = etat("0.1.0", &[], d(2026, 11, 15));
+        assert!(ui.join(e["app"]["logo"].as_str().unwrap()).is_file());
+        let index = std::fs::read_to_string(ui.join("index.html")).unwrap();
+        for f in ["portefeuille.css", "portefeuille.js"] {
+            assert!(ui.join(f).is_file(), "{f}");
+            assert!(index.contains(f), "index.html ne charge pas {f}");
+        }
     }
 }

@@ -40,7 +40,10 @@ fn appli() -> App<MockRuntime> {
 fn appli_avec_journal() -> (App<MockRuntime>, Arc<Mutex<Vec<String>>>) {
     let lignes = Arc::new(Mutex::new(Vec::new()));
     let pour_page = Arc::clone(&lignes);
-    let page = Page::new(commandes::etat_page("0.1.0", &[]), move |t| pour_page.lock().unwrap().push(t.into()));
+    let aujourdhui = paymind_moteur::Date::nouvelle(2026, 11, 15).expect("date");
+    let page = Page::new(commandes::etat_page("0.1.0", &[], &[], aujourdhui), move |t| {
+        pour_page.lock().unwrap().push(t.into())
+    });
     let app = paymind_appli::preparer(mock_builder(), page).build(paymind_appli::contexte()).expect("appli d'essai");
     (app, lignes)
 }
