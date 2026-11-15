@@ -46,7 +46,7 @@ jobs:
           rustc --version
           if ((rustc --version) -notmatch '^rustc 1\.99\.1 ') { Write-Host 'Mauvaise version de Rust.'; exit 1 }
 
-      - name: "Tests Rust : vie avec Mindset, relais, données, permissions de la page (cargo test)"
+      - name: "Tests Rust : calcul des comptes, vie avec Mindset, relais, données, permissions de la page (cargo test)"
         run: cargo test --locked --workspace
 
       - name: "Tests de la construction d'essai (cargo test --features essai)"

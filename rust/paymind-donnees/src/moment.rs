@@ -1,6 +1,6 @@
 //! Un moment en heure locale (donné par l'appelant : ce crate ne lit jamais l'horloge de Windows), écrit comme
-//! `Get-Date -Format s` (le journal, etat.json). Repris de mindcare-donnees ; les dates des abonnements viendront à
-//! l'étape 2.
+//! `Get-Date -Format s` (le journal, etat.json). Repris de mindcare-donnees. Les dates des abonnements sont celles de
+//! paymind-moteur ([`Moment::date`], [`Moment::instant`]).
 
 use std::fmt;
 
@@ -41,6 +41,28 @@ impl Moment {
             && minute < 60
             && seconde < 60;
         ok.then_some(Moment { annee, mois, jour, heure, minute, seconde })
+    }
+
+    /// Le jour de ce moment, pour le calcul des comptes (un moment fait à la main qui n'existe pas est ramené au 1er
+    /// de son mois, ou au 1er janvier 1970).
+    pub fn date(&self) -> paymind_moteur::Date {
+        use paymind_moteur::Date;
+        Date::nouvelle(self.annee, self.mois, self.jour)
+            .or_else(|| Date::nouvelle(self.annee, self.mois, 1))
+            .unwrap_or(Date::EPOQUE)
+    }
+
+    /// L'instant de ce moment (à la minute), pour les rappels.
+    pub fn instant(&self) -> paymind_moteur::Instant {
+        paymind_moteur::Instant::nouveau(self.date(), self.heure, self.minute)
+    }
+
+    /// `Get-Date -Format 'yyyyMMdd-HHmmss'` : « 20261114-140500 » (le nom d'un fichier mis de côté).
+    pub fn compacte(&self) -> String {
+        format!(
+            "{:04}{:02}{:02}-{:02}{:02}{:02}",
+            self.annee, self.mois, self.jour, self.heure, self.minute, self.seconde
+        )
     }
 
     /// `Get-Date -Format s` : « 2026-11-14T14:05:00 ».

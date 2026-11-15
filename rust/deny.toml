@@ -42,7 +42,7 @@ deny = [
 # après relecture.
 allow = [
     # les nôtres
-    "paymind-donnees", "paymind-vie", "paymind-relais", "paymind-appli",
+    "paymind-moteur", "paymind-donnees", "paymind-vie", "paymind-relais", "paymind-appli",
     # Windows (Microsoft) : verrou, signal, fenêtre, registre en lecture (paymind-appli), comme le Rust de Mindset
     "windows",
     "windows-core",

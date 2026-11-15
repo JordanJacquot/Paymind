@@ -2103,9 +2103,14 @@ dependencies = [
 name = "paymind-donnees"
 version = "0.1.0"
 dependencies = [
+ "paymind-moteur",
  "serde_json",
  "suite-commun",
 ]
+
+[[package]]
+name = "paymind-moteur"
+version = "0.1.0"
 
 [[package]]
 name = "paymind-relais"

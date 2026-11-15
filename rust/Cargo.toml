@@ -2,7 +2,7 @@
 # Mindcare (D:\Projets\Mindcare\rust), lui-même repris du Rust de Mindset.
 [workspace]
 resolver = "3"
-members = ["paymind-donnees", "paymind-vie", "paymind-relais", "paymind-appli"]
+members = ["paymind-moteur", "paymind-donnees", "paymind-vie", "paymind-relais", "paymind-appli"]
 
 [workspace.package]
 edition = "2024"

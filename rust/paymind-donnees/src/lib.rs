@@ -1,6 +1,7 @@
 //! Les données de Paymind, sans écran et sans appel à Windows (seulement des fichiers). Repris de mindcare-donnees,
-//! réduit à ce qui sert à l'étape 1 :
+//! réduit à ce qui sert à Paymind :
 //!
+//! - [`abonnements`] : abonnements.json (la liste, sa copie de secours, un fichier abîmé ou d'une version future) ;
 //! - [`moment`] : un moment en heure locale (le journal, etat.json) ;
 //! - [`journal`] : le journal (journal.txt, une ligne datée par événement) ;
 //! - [`fichiers`] : les fichiers JSON écrits à côté puis remplacés d'un coup, un fichier abîmé mis de côté (`json_sur`) ;
@@ -13,6 +14,7 @@
 //! Ce que Windows doit fournir est donné par l'appelant : l'heure locale ([`Horloge`]) et les variables
 //! d'environnement.
 
+pub mod abonnements;
 pub mod carte;
 pub mod donnees;
 pub mod dossier;
@@ -22,6 +24,7 @@ pub mod moment;
 pub mod reglages;
 pub mod valeurs;
 
+pub use abonnements::Abonnements;
 pub use carte::{Carte, EtatMindset, etat_carte};
 pub use donnees::Donnees;
 pub use fichiers::{FichierRelu, Fichiers};

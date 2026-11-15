@@ -5,10 +5,13 @@
 //! (3 au plus), Maj }. Etat : ok (vert), info (blanc), attention (orange), urgent (rouge). Mindset coupe chaque ligne à
 //! 80 caractères.
 //!
-//! Étape 1 : pas encore d'abonnements, la carte le dit. Le total du mois et le prochain paiement viendront à l'étape 6.
+//! Depuis l'étape 2, la carte vient du calcul des comptes (paymind-moteur) : le total du mois, le prochain paiement et
+//! le nombre d'abonnements ; « Aucun abonnement pour l'instant » quand la liste est vide.
 
 use std::path::{Path, PathBuf};
 
+use paymind_moteur::textes::{euros_court, nombre_abonnements, texte_prochain};
+use paymind_moteur::{Abonnement, Date, bilan};
 use serde_json::{Value, json};
 
 use crate::fichiers::Fichiers;
@@ -42,13 +45,52 @@ pub struct Carte {
     pub lignes: Vec<Ligne>,
 }
 
-/// Ce que la carte montre (étape 1 : aucun abonnement).
-pub fn etat_carte() -> Carte {
-    Carte {
-        titre: TITRE.to_string(),
-        scores: Vec::new(),
-        lignes: vec![Ligne { texte: AUCUN.to_string(), etat: "info".to_string() }],
+/// La ligne quand aucun abonnement actif n'a de paiement à venir.
+pub const AUCUN_PAIEMENT: &str = "Aucun paiement à venir";
+
+/// Un texte coupé pour tenir dans une ligne de la carte (« ... » à la fin s'il est coupé).
+fn tenir(t: String) -> String {
+    if longueur(&t) <= LIGNE_MAX {
+        return t;
     }
+    let mut s = String::new();
+    for c in t.chars() {
+        if longueur(&s) + c.len_utf16() + 3 > LIGNE_MAX {
+            break;
+        }
+        s.push(c);
+    }
+    s.trim_end().to_string() + "..."
+}
+
+fn ligne(texte: String, etat: &str) -> Ligne {
+    Ligne { texte: tenir(texte), etat: etat.to_string() }
+}
+
+/// Ce que la carte montre ce jour-là : « 86,97 € par mois », le prochain paiement (« Netflix dans 3 jours »), le nombre
+/// d'abonnements ; « Aucun abonnement pour l'instant » quand la liste est vide.
+pub fn etat_carte(liste: &[Abonnement], aujourdhui: Date) -> Carte {
+    let mut c = Carte { titre: TITRE.to_string(), scores: Vec::new(), lignes: Vec::new() };
+    if liste.is_empty() {
+        c.lignes.push(ligne(AUCUN.to_string(), "info"));
+        return c;
+    }
+    let b = bilan(liste, aujourdhui);
+    c.lignes.push(ligne(format!("{} par mois", euros_court(b.par_mois)), "ok"));
+    c.lignes.push(match &b.prochain {
+        // (aujourd'hui ou demain : en orange)
+        Some(p) => ligne(texte_prochain(p, aujourdhui), if p.dans_jours <= 1 { "attention" } else { "info" }),
+        None => ligne(AUCUN_PAIEMENT.to_string(), "info"),
+    });
+    let mut n = nombre_abonnements(b.actifs);
+    if b.en_pause > 0 {
+        n.push_str(&format!(", {} en pause", b.en_pause));
+    }
+    if b.a_renouveler > 0 {
+        n.push_str(&format!(", {} à renouveler", b.a_renouveler));
+    }
+    c.lignes.push(ligne(n, if b.a_renouveler > 0 { "attention" } else { "info" }));
+    c
 }
 
 /// L'écriture de etat.json (`Write-EtatMindset`) : seulement quand la carte change.
@@ -96,16 +138,71 @@ impl EtatMindset {
 mod tests {
     use super::*;
 
-    #[test]
-    fn la_carte_tient_dans_les_limites_de_mindset() {
-        let c = etat_carte();
+    use paymind_moteur::Rythme;
+
+    fn d(a: i32, m: u32, j: u32) -> Date {
+        Date::nouvelle(a, m, j).unwrap()
+    }
+
+    fn l(texte: &str, etat: &str) -> Ligne {
+        Ligne { texte: texte.into(), etat: etat.into() }
+    }
+
+    fn dans_les_limites(c: &Carte) {
         assert_eq!(c.titre, "Mes abonnements");
-        assert_eq!(c.lignes, vec![Ligne { texte: "Aucun abonnement pour l'instant".into(), etat: "info".into() }]);
-        assert!(c.scores.is_empty());
+        assert!(c.scores.is_empty() && c.lignes.len() <= 3);
         for l in &c.lignes {
-            assert!(longueur(&l.texte) <= LIGNE_MAX);
+            assert!(longueur(&l.texte) <= LIGNE_MAX, "{}", l.texte);
             // (aucun tiret long ni demi-cadratin : règle de la suite)
             assert!(!l.texte.contains(['\u{2013}', '\u{2014}']));
         }
+    }
+
+    #[test]
+    fn la_carte_sans_abonnement() {
+        let c = etat_carte(&[], d(2026, 11, 15));
+        assert_eq!(c.lignes, vec![l("Aucun abonnement pour l'instant", "info")]);
+        dans_les_limites(&c);
+    }
+
+    #[test]
+    fn la_carte_avec_des_abonnements() {
+        let auj = d(2026, 11, 15);
+        let mut liste = vec![
+            Abonnement::nouveau("a1", "Netflix", 1349, Rythme::Mois, d(2026, 11, 18)),
+            Abonnement::nouveau("a2", "Assurance", 54_000, Rythme::An, d(2027, 1, 9)),
+            Abonnement::nouveau("a3", "Spotify", 1112, Rythme::Mois, d(2026, 11, 16)),
+            Abonnement::nouveau("a4", "Salle", 2999, Rythme::Mois, d(2026, 11, 1)),
+        ];
+        liste[2].pause = true;
+        liste[3].auto = false;
+        let c = etat_carte(&liste, auj);
+        assert_eq!(
+            c.lignes,
+            vec![
+                l("58,49\u{a0}€ par mois", "ok"),
+                l("Netflix dans 3 jours", "info"),
+                l("2 abonnements, 1 en pause, 1 à renouveler", "attention")
+            ]
+        );
+        dans_les_limites(&c);
+        // demain : en orange
+        let c = etat_carte(&liste[..1], d(2026, 11, 17));
+        assert_eq!(c.lignes[1], l("Netflix demain", "attention"));
+        assert_eq!(c.lignes[2], l("1 abonnement", "info"));
+        // tout en pause : rien à venir
+        let c = etat_carte(&liste[2..3], auj);
+        assert_eq!(
+            c.lignes,
+            vec![l("0\u{a0}€ par mois", "ok"), l(AUCUN_PAIEMENT, "info"), l("0 abonnement, 1 en pause", "info")]
+        );
+    }
+
+    #[test]
+    fn un_nom_tres_long_est_coupe() {
+        let nom = "Abonnement au nom vraiment très très long ".repeat(4);
+        let c = etat_carte(&[Abonnement::nouveau("a1", &nom, 100, Rythme::Mois, d(2026, 11, 20))], d(2026, 11, 15));
+        dans_les_limites(&c);
+        assert!(c.lignes[1].texte.ends_with("...") && c.lignes[1].texte.starts_with("Abonnement au nom"));
     }
 }
