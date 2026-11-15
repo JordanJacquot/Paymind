@@ -434,7 +434,7 @@ mod tests {
         let v = vue(&[]);
         let groupes = v["groupes"].as_array().unwrap();
         assert_eq!(groupes.len(), 11);
-        assert_eq!(groupes.iter().map(|g| g["elements"].as_array().unwrap().len()).sum::<usize>(), 88);
+        assert_eq!(groupes.iter().map(|g| g["elements"].as_array().unwrap().len()).sum::<usize>(), 89);
         assert_eq!(groupes[0]["nom"], "Films et séries");
         let netflix = &groupes[0]["elements"][0];
         assert_eq!(netflix["prix"], "7,99\u{a0}€");

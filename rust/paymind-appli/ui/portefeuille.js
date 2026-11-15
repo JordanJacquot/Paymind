@@ -86,7 +86,8 @@
     return `<span class="c-logo c-plaque"><b>${ini}</b></span>`;
   }
 
-  // Le rond d'une pastille de « Bientôt » : le logo (s'il tient dans un rond), un pictogramme, ou les initiales
+  // Le rond d'une pastille de « Bientôt » : l'emblème de la marque ou son logo (s'il tient dans un rond), un
+  // pictogramme, ou les initiales
   function rondHTML(x) {
     const l = x.logo && typeof x.logo === 'object' ? x.logo : null;
     if (l?.forme === 'picto' && PICTOS[l.picto]) return `<span class="rond-c r-picto" style="${styleCouleurs(x)}">${PICTOS[l.picto]}</span>`;

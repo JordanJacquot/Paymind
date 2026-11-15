@@ -10,6 +10,9 @@
 #     Paymind.exe     <- le relais (rust\paymind-relais), le champ « exe » de apps.json : il lance Mindset.exe
 #     version.json    <- { "appli": "paymind", "version": <version du Cargo.toml de paymind-appli>,
 #                          "mindset_min": "2.15.0" } (contrat-appli, partie 10 : une seule source pour la version)
+#     fichiers\Paymind.ico  <- l'icône de Paymind (rust\paymind-appli\icons\Paymind.ico, faite par outils\icone.ps1),
+#                        une image et pas un programme : la console 3D de Mindset prend le logo d'une appli dans le
+#                        premier .ico de <son dossier d'installation>\fichiers (mindset-console, images.rs icone_appli)
 #
 # Construction en release seulement, avec les versions du Cargo.lock (--locked) : un exe de mise au point n'est
 # jamais livré (règle 5 de docs\regles-tauri.md, dépôt Mindset). Le dossier <dossier>\Paymind est vidé d'abord.
@@ -64,9 +67,15 @@ foreach ($exe in 'Mindset.exe', 'Paymind.exe') {
     Copy-Item -LiteralPath $chemin -Destination (Join-Path $dossier $exe)
 }
 
+# L'icône, pour le logo de la console 3D de Mindset (fichiers\*.ico du dossier d'installation)
+$icone = Join-Path $rust 'paymind-appli\icons\Paymind.ico'
+if (-not (Test-Path -LiteralPath $icone -PathType Leaf)) { throw "Icône introuvable : $icone (outils\icone.ps1 la fait)." }
+New-Item -ItemType Directory -Force -Path (Join-Path $dossier 'fichiers') | Out-Null
+Copy-Item -LiteralPath $icone -Destination (Join-Path $dossier 'fichiers\Paymind.ico')
+
 # version.json en UTF-8 sans marque, comme le lit Mindset (Read-VersionJson) et suite-commun
 $json = [ordered]@{ appli = 'paymind'; version = $version; mindset_min = $MindsetMin } | ConvertTo-Json -Compress
 [IO.File]::WriteAllText((Join-Path $dossier 'version.json'), $json, (New-Object Text.UTF8Encoding($false)))
 
 "OK : $dossier (Paymind $version)"
-Get-ChildItem -LiteralPath $dossier | ForEach-Object { "  $($_.Name) ($($_.Length) octets)" }
+Get-ChildItem -LiteralPath $dossier -Recurse -File | ForEach-Object { "  $($_.FullName.Substring($dossier.Length + 1)) ($($_.Length) octets)" }

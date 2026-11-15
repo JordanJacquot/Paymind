@@ -12,8 +12,10 @@ Free code signing provided by [SignPath.io](https://about.signpath.io), certific
 
 - `Mindset.exe` (the Paymind program, named like every program of the suite) and `Paymind.exe` (a small relay that
   starts it), both built from this repository (`rust\paymind-appli` and `rust\paymind-relais`).
-- `version.json`, the third and last file of `Paymind.zip`, is data (the name and version of the app), not a program,
-  and is not signed.
+- `version.json`, the third file of `Paymind.zip`, is data (the name and version of the app), not a program, and is
+  not signed.
+- `fichiers\Paymind.ico`, the fourth and last file of `Paymind.zip`, is an image (the icon of Paymind, the same as in
+  the programs, shown as its logo by the 3D console of Mindset), not a program, and is not signed.
 - The page of the app, the catalogue of subscriptions (`catalogue\catalogue.json`) and its logos are stored inside
   `Mindset.exe`: there is no other file. The program includes open source libraries: Tauri and the other Rust
   libraries listed in `rust\Cargo.lock` (licenses compatible with MIT, checked at each build by `cargo deny`), and
@@ -96,8 +98,10 @@ Signature gratuite du code fournie par [SignPath.io](https://about.signpath.io),
 
 - `Mindset.exe` (le programme de Paymind, au même nom que chaque programme de la suite) et `Paymind.exe` (un petit
   relais qui le lance), tous deux construits depuis ce dépôt (`rust\paymind-appli` et `rust\paymind-relais`).
-- `version.json`, le troisième et dernier fichier de `Paymind.zip`, est une donnée (le nom et la version de l'appli),
-  pas un programme, et n'est pas signé.
+- `version.json`, le troisième fichier de `Paymind.zip`, est une donnée (le nom et la version de l'appli), pas un
+  programme, et n'est pas signé.
+- `fichiers\Paymind.ico`, le quatrième et dernier fichier de `Paymind.zip`, est une image (l'icône de Paymind, la même
+  que dans les programmes, que la console 3D de Mindset affiche comme logo), pas un programme, et n'est pas signée.
 - La page de l'appli, la liste toute prête des abonnements (`catalogue\catalogue.json`) et ses logos sont rangés dans
   `Mindset.exe` : il n'y a aucun autre fichier. Le programme contient des bibliothèques libres : Tauri et les autres
   bibliothèques Rust listées dans `rust\Cargo.lock` (licences compatibles avec la licence MIT, vérifiées à chaque

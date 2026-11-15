@@ -8,8 +8,9 @@
 #   1. « construire » : Rust 1.99.1 (rust-toolchain.toml), règles Tauri de la suite (verifier-tauri.ps1 du dépôt
 #      Mindset, épinglé au même commit que tests.yml), cargo deny, construction de publication (outils\construire-rust.ps1 :
 #      cargo build --release --locked, jamais l'option « essai »), puis Paymind.zip au même format que les autres zips
-#      de la suite (outils\zip-rust.ps1, vérifié par outils\verifier-zip-rust.ps1 : exactement Mindset.exe, Paymind.exe
-#      et version.json dans « Paymind », fiches de version, aucune trace de la construction d'essai, aucun runtime C à
+#      de la suite (outils\zip-rust.ps1, vérifié par outils\verifier-zip-rust.ps1 : exactement Mindset.exe, Paymind.exe,
+#      version.json et fichiers\Paymind.ico, le logo de la console 3D de Mindset, une image non signée, dans « Paymind »,
+#      fiches de version, aucune trace de la construction d'essai, aucun runtime C à
 #      part). Le zip est attesté (attestation GitHub : ce dépôt, ce fichier de construction, ce commit) et déposé comme
 #      artefact « Paymind-rust ». outils\publier.ps1 le récupère et vérifie son attestation avant de le signer :
 #        gh attestation verify Paymind.zip --repo JordanJacquot/Paymind
@@ -125,7 +126,7 @@ jobs:
 
       # Construction de publication : cargo build --release --locked -p paymind-appli -p paymind-relais, sans l'option
       # « essai » (outils\construire-rust.ps1, le même que dans tests.yml)
-      - name: "Construire Paymind (outils\\construire-rust.ps1 : Mindset.exe, Paymind.exe, version.json)"
+      - name: "Construire Paymind (outils\\construire-rust.ps1 : Mindset.exe, Paymind.exe, version.json, fichiers\\Paymind.ico)"
         run: |
           & .\outils\construire-rust.ps1 -Sortie '_ci\rust'
           if (-not $?) { exit 1 }
@@ -155,19 +156,20 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      # Le dossier Paymind du zip, tel quel (Mindset.exe, Paymind.exe, version.json)
+      # Le dossier Paymind du zip, tel quel (Mindset.exe, Paymind.exe, version.json, fichiers\Paymind.ico : une image,
+      # pas un programme, que SignPath laisse telle quelle)
       - name: "Préparer le dossier à signer"
         run: |
           $ErrorActionPreference = 'Stop'
           $dest = '_ci\a-signer'
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
           Expand-Archive -LiteralPath '_ci\rust-zip\Paymind.zip' -DestinationPath $dest
-          foreach ($e in 'Mindset.exe', 'Paymind.exe', 'version.json') {
+          foreach ($e in 'Mindset.exe', 'Paymind.exe', 'version.json', 'fichiers\Paymind.ico') {
             if (-not (Test-Path -LiteralPath "$dest\Paymind\$e")) { throw "Dossier à signer inattendu : $dest\Paymind\$e absent" }
           }
           Get-ChildItem -LiteralPath $dest -Recurse -File | Measure-Object | ForEach-Object { Write-Host "$($_.Count) fichiers" }
 
-      # L'artefact contient un seul dossier « Paymind » (Mindset.exe, Paymind.exe, version.json).
+      # L'artefact contient un seul dossier « Paymind » (Mindset.exe, Paymind.exe, version.json, fichiers\Paymind.ico).
       # SignPath vérifie qu'il vient bien de ce workflow (origin verification).
       - name: "Déposer l'artefact non signé"
         id: depot
@@ -217,7 +219,8 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $racine = '_ci\signe\Paymind'
-          foreach ($e in 'Mindset.exe', 'Paymind.exe') { if (-not (Test-Path -LiteralPath "$racine\$e")) { throw "Dossier signé inattendu : $racine\$e absent" } }
+          # (fichiers\Paymind.ico : une image, non signée, mais elle doit rester dans le zip signé : le logo de la console 3D)
+          foreach ($e in 'Mindset.exe', 'Paymind.exe', 'version.json', 'fichiers\Paymind.ico') { if (-not (Test-Path -LiteralPath "$racine\$e")) { throw "Dossier signé inattendu : $racine\$e absent" } }
           $problemes = @()
           $nos = @(Get-Item -LiteralPath "$racine\Mindset.exe", "$racine\Paymind.exe")
           foreach ($f in $nos) {

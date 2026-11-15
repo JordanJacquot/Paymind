@@ -401,16 +401,24 @@ pub fn logo_carte(m: &Modele) -> Value {
     }
 }
 
-/// Le logo d'une pastille ronde de « Bientôt » (30 px) : la pastille propre de l'abonnement (l'œuf de Dofus), sinon
-/// son logo s'il n'est pas trop large pour un rond, ou son pictogramme ; rien sinon (la pastille montre alors ses
-/// initiales et son nom).
+/// Au delà de ce rapport largeur / hauteur, un logo est illisible dans un rond de « Bientôt » : le rond montre alors
+/// l'emblème de la marque (`pastille`), sinon ses initiales.
+const RATIO_ROND: f64 = 1.6;
+
+/// Le logo d'une pastille ronde de « Bientôt » (30 px) : la pastille propre de l'abonnement (l'œuf de Dofus, l'emblème
+/// de Crédit Mutuel), posée comme son logo (en blanc, en couleurs ou sur fond blanc), sinon son logo s'il n'est pas
+/// trop large pour un rond, ou son pictogramme ; rien sinon (la pastille montre alors ses initiales et son nom).
 pub fn logo_rond(m: &Modele) -> Option<Value> {
     if let Some(p) = &m.pastille {
-        return Some(json!({ "forme": "couleur", "url": url(p) }));
+        let forme = match m.affichage {
+            Affichage::Blanc | Affichage::Plaque => m.affichage.code(),
+            _ => Affichage::Couleur.code(),
+        };
+        return Some(json!({ "forme": forme, "url": url(p) }));
     }
     match (m.affichage, &m.logo) {
         (Affichage::Picto(p), _) => Some(json!({ "forme": "picto", "picto": p.code() })),
-        (Affichage::Blanc | Affichage::Couleur | Affichage::Plaque, Some(f)) if m.ratio <= 1.6 => {
+        (Affichage::Blanc | Affichage::Couleur | Affichage::Plaque, Some(f)) if m.ratio <= RATIO_ROND => {
             Some(json!({ "forme": m.affichage.code(), "url": url(f) }))
         }
         _ => None,
@@ -429,7 +437,7 @@ mod tests {
     #[test]
     fn la_liste_de_l_exe_est_valable() {
         let c = Catalogue::lire(TEXTE).expect("catalogue.json refusé");
-        assert_eq!(c.modeles.len(), 88);
+        assert_eq!(c.modeles.len(), 89);
         assert_eq!(c.categories.len(), 11);
         assert_eq!(&c, catalogue());
         // Dans l'ordre des catégories
@@ -566,9 +574,26 @@ mod tests {
         assert_eq!(logo_carte(picto)["forme"], "picto");
         let t = c.modeles.iter().find(|m| m.affichage == Affichage::Texte).unwrap();
         assert_eq!(logo_carte(t)["texte"], t.nom.as_str());
-        // Un logo trop large pour un rond : les initiales
-        let large = c.modeles.iter().find(|m| m.logo.is_some() && m.ratio > 1.6 && m.pastille.is_none()).unwrap();
-        assert!(logo_rond(large).is_none());
+        // Un logo trop large pour un rond : l'emblème de la marque, posé comme son logo (Crédit Mutuel sur fond blanc,
+        // Amazon Prime en blanc) ; sans emblème, rien (les initiales) ; un logo qui tient dans un rond : lui-même
+        let rond = |id: &str| logo_rond(c.modele(id).unwrap());
+        assert_eq!(rond("creditmutuel"), Some(json!({ "forme": "plaque", "url": "logos/creditmutuel-embleme.svg" })));
+        assert_eq!(rond("amazonprime"), Some(json!({ "forme": "blanc", "url": "logos/amazon.svg" })));
+        assert_eq!(rond("dofus"), Some(json!({ "forme": "couleur", "url": "logos/dofus-oeuf.png" })));
+        assert_eq!(rond("lefigaro"), None);
+        assert_eq!(rond("netflix"), Some(json!({ "forme": "blanc", "url": "logos/netflix.svg" })));
+        for m in &c.modeles {
+            let large = m.logo.is_some() && m.ratio > RATIO_ROND;
+            match logo_rond(m) {
+                Some(r) if large => {
+                    assert!(m.pastille.is_some() && r["url"] == url(m.pastille.as_ref().unwrap()), "{}", m.id)
+                }
+                None => assert!(m.pastille.is_none() && (large || m.logo.is_none()), "{} : pas de rond", m.id),
+                Some(_) => {}
+            }
+        }
+        let t = c.modeles.iter().find(|m| m.affichage == Affichage::Texte).unwrap();
+        assert!(logo_rond(t).is_none());
         // Chaque taille dans la carte
         for m in &c.modeles {
             let l = logo_carte(m);

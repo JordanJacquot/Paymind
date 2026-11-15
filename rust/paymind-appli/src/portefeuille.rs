@@ -316,7 +316,8 @@ pub fn portefeuille(liste: &[Abonnement], aujourdhui: Date) -> Value {
                 "initiales": initiales(&a.nom),
                 "c1": c1,
                 "c2": c2,
-                // (un logo trop large pour un rond : les initiales, et le nom à côté)
+                // (le logo d'un abonnement de la liste toute prête, ou l'emblème de sa marque si le logo est trop large ;
+                // rien pour un abonnement « à moi » ou une marque sans emblème : ses initiales, et le nom à côté)
                 "logo": modele(a).and_then(logo_rond).unwrap_or(Value::Null),
                 "date": date_courte(p.date),
                 "aide": format!("{} : {} {}", a.nom, euros_court(p.prix), dans(p.date, aujourdhui)),
@@ -556,6 +557,43 @@ mod tests {
         assert_eq!(el[1]["logo"]["url"], "logos/worldofwarcraft.svg");
         assert_eq!(el[2]["logo"]["url"], "logos/dofus-oeuf.png");
         assert_eq!(el[2]["c1"], "#7BA33A");
+    }
+
+    /// « Bientôt » montre le logo d'un abonnement de la liste toute prête, ou l'emblème de sa marque quand le logo est
+    /// trop large pour un rond (Crédit Mutuel, Amazon Prime) ; un abonnement à la main, une marque sans emblème au logo
+    /// trop large (Le Figaro) ou sans logo (Macif) n'a rien (la page montre ses initiales).
+    #[test]
+    fn bientot_avec_le_logo_de_la_liste() {
+        let avec = |mut a: Abonnement, id: &str| {
+            a.catalogue = Some(id.into());
+            a
+        };
+        let l = vec![
+            avec(ab("a1", "Crédit Mutuel", "banque", 2500, Rythme::Mois, d(2026, 11, 16)), "creditmutuel"),
+            avec(ab("a2", "Amazon Prime", "films", 699, Rythme::Mois, d(2026, 11, 17)), "amazonprime"),
+            ab("a3", "Mon club de foot", "moi", 4000, Rythme::Mois, d(2026, 11, 18)),
+        ];
+        let p = portefeuille(&l, d(2026, 11, 15));
+        let el = p["bientot"]["elements"].as_array().unwrap();
+        assert_eq!(el[0]["logo"], json!({ "forme": "plaque", "url": "logos/creditmutuel-embleme.svg" }));
+        assert_eq!(el[0]["c1"], "#164194");
+        assert_eq!(el[1]["logo"], json!({ "forme": "blanc", "url": "logos/amazon.svg" }));
+        assert_eq!(
+            (el[2]["nom"].as_str(), &el[2]["logo"], el[2]["initiales"].as_str()),
+            (Some("Mon club de foot"), &Value::Null, Some(initiales("Mon club de foot").as_str()))
+        );
+        // Macif : de la liste toute prête, mais sans logo (son nom sur une plaque dans la carte) ; Le Figaro : un logo
+        // trop large, sans emblème
+        let l = vec![
+            avec(ab("a4", "Macif", "assurances", 3000, Rythme::Mois, d(2026, 11, 19)), "macif"),
+            avec(ab("a5", "Le Figaro", "presse", 1500, Rythme::Mois, d(2026, 11, 20)), "lefigaro"),
+        ];
+        let el = portefeuille(&l, d(2026, 11, 15))["bientot"]["elements"].clone();
+        assert_eq!((&el[0]["logo"], el[0]["initiales"].as_str()), (&Value::Null, Some("M")));
+        assert_eq!(
+            (&el[1]["logo"], el[1]["initiales"].as_str()),
+            (&Value::Null, Some(initiales("Le Figaro").as_str()))
+        );
     }
 
     #[test]

@@ -2,6 +2,8 @@
 # zips de la suite (Compress-Archive du dossier « Paymind » : le dossier « dossier_zip » de l'entrée apps.json, avec
 # Paymind.exe dedans), puis le vérifie (outils\verifier-zip-rust.ps1). Repris de Mindcare. Sur le PC, seulement pour un
 # essai : le zip publié viendra toujours de GitHub.
+# Dans le zip : Paymind\Mindset.exe, Paymind\Paymind.exe, Paymind\version.json et Paymind\fichiers\Paymind.ico (le
+# logo de la console 3D de Mindset), rien d'autre (la liste exacte est dans verifier-zip-rust.ps1).
 #
 #   & '.\outils\zip-rust.ps1' -Dossier <sortie>\Paymind -Zip <dossier>\Paymind.zip [-VerifierImports <...>]
 #
@@ -16,6 +18,7 @@ $Dossier = [IO.Path]::GetFullPath($Dossier).TrimEnd('\')
 $Zip = [IO.Path]::GetFullPath($Zip)
 if ((Split-Path $Dossier -Leaf) -cne 'Paymind') { throw "Le dossier à zipper doit s'appeler Paymind : $Dossier" }
 if (-not (Test-Path -LiteralPath (Join-Path $Dossier 'Paymind.exe') -PathType Leaf)) { throw "Paymind.exe introuvable dans $Dossier" }
+if (-not (Test-Path -LiteralPath (Join-Path $Dossier 'fichiers\Paymind.ico') -PathType Leaf)) { throw "fichiers\Paymind.ico introuvable dans $Dossier (outils\construire-rust.ps1 l'y copie)" }
 New-Item -ItemType Directory -Force -Path (Split-Path $Zip -Parent) | Out-Null
 Remove-Item -LiteralPath $Zip -Force -ErrorAction SilentlyContinue
 Compress-Archive -LiteralPath $Dossier -DestinationPath $Zip -Force

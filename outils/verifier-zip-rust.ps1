@@ -5,8 +5,10 @@
 #
 # Le zip doit être celui que Mindset attend pour une appli en Rust (docs\contrat-appli.md et docs\regles-tauri.md du
 # dépôt Mindset) :
-#   - exactement un dossier « Paymind » et dedans exactement Mindset.exe, Paymind.exe et version.json (rien d'autre :
-#     ni script, ni DLL, ni fichier en plus, ni version.json à la racine du zip) ;
+#   - exactement un dossier « Paymind » et dedans exactement Mindset.exe, Paymind.exe, version.json et
+#     fichiers\Paymind.ico (rien d'autre : ni script, ni DLL, ni fichier en plus, ni version.json à la racine du zip) ;
+#   - fichiers\Paymind.ico : une icône que la console 3D de Mindset sait lire (mindset-console, images.rs
+#     png_de_icone : au plus 2 Mo, une image PNG de 256 px dans l'icône), identique à rust\paymind-appli\icons\Paymind.ico ;
 #   - version.json en UTF-8 sans marque : appli « paymind », version celle du Cargo.toml de paymind-appli (ou
 #     -Version, qui doit alors être la même), mindset_min 2.15.0 ;
 #   - fiches de version : Mindset.exe décrit « Mindset » (une seule ligne « Mindset » dans le Gestionnaire des tâches),
@@ -22,7 +24,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $racine = Split-Path $PSScriptRoot -Parent
 $MindsetMin = '2.15.0'
-$attendus = @('Paymind\Mindset.exe', 'Paymind\Paymind.exe', 'Paymind\version.json')
+$attendus = @('Paymind\Mindset.exe', 'Paymind\Paymind.exe', 'Paymind\version.json', 'Paymind\fichiers\Paymind.ico')
 $problemes = New-Object Collections.Generic.List[string]
 
 if (-not (Test-Path -LiteralPath $Zip -PathType Leaf)) { Write-Host "Zip introuvable : $Zip"; exit 1 }
@@ -71,6 +73,32 @@ try {
             if ($j.appli -cne 'paymind') { $problemes.Add("version.json : appli « $($j.appli) » au lieu de « paymind »") }
             if ($j.version -cne $Version) { $problemes.Add("version.json : version $($j.version) au lieu de $Version") }
             if ($j.mindset_min -cne $MindsetMin) { $problemes.Add("version.json : mindset_min $($j.mindset_min) au lieu de $MindsetMin") }
+        }
+    }
+
+    # L'icône du logo de la console 3D : lue comme Mindset la lit (images.rs : ICONE_MAX, puis png_de_icone qui garde la
+    # plus grande image PNG de l'icône), et la même que celle des programmes
+    $ico = Join-Path $tmp 'Paymind.ico'
+    if (Test-Path -LiteralPath $ico) {
+        $o = [IO.File]::ReadAllBytes($ico)
+        $plusGrande = 0
+        if ($o.Length -ge 6 -and [BitConverter]::ToUInt16($o, 0) -eq 0 -and [BitConverter]::ToUInt16($o, 2) -eq 1) {
+            $n = [BitConverter]::ToUInt16($o, 4)
+            for ($k = 0; $k -lt $n -and 6 + 16 * $k + 16 -le $o.Length; $k++) {
+                $e = 6 + 16 * $k
+                $w = if ($o[$e] -eq 0) { 256 } else { [int]$o[$e] }
+                $lg = [uint64][BitConverter]::ToUInt32($o, $e + 8); $dp = [uint64][BitConverter]::ToUInt32($o, $e + 12)
+                # (une image PNG commence par 89 50 4E 47 0D 0A 1A 0A)
+                $png = $dp + $lg -le [uint64]$o.Length -and $lg -ge 8 -and ([BitConverter]::ToString($o, [int]$dp, 8) -ceq '89-50-4E-47-0D-0A-1A-0A')
+                if ($png -and $w -gt $plusGrande) { $plusGrande = $w }
+            }
+        }
+        Write-Host "fichiers\Paymind.ico : $($o.Length) octets, plus grande image PNG $plusGrande px, SHA-256 $((Get-FileHash -LiteralPath $ico -Algorithm SHA256).Hash)"
+        if ($o.Length -gt 2MB) { $problemes.Add("fichiers\Paymind.ico fait plus de 2 Mo : la console 3D de Mindset ne la lirait pas.") }
+        if ($plusGrande -ne 256) { $problemes.Add("fichiers\Paymind.ico n'est pas une icône avec une image PNG de 256 px (plus grande image PNG : $plusGrande px).") }
+        $source = Join-Path $racine 'rust\paymind-appli\icons\Paymind.ico'
+        if (-not (Test-Path -LiteralPath $source -PathType Leaf) -or (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $ico -Algorithm SHA256).Hash) {
+            $problemes.Add('fichiers\Paymind.ico n''est pas rust\paymind-appli\icons\Paymind.ico (relancer outils\construire-rust.ps1).')
         }
     }
 

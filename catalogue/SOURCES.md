@@ -14,7 +14,9 @@ Les logos restent la propriété de leurs marques. Ils servent seulement à reco
 - `abonnements` : `id`, `nom`, `categorie`, `prix_centimes`, `rythme` (`semaine`, `mois`, `trimestre`, `an`), `offre`,
   `logo` (fichier dans `logos/`, vide s'il n'y en a pas), `logo_ratio` (largeur / hauteur du logo), `affichage`,
   `fond` et `fond_fin` (dégradé de la carte, comme la maquette), `texte` (couleur du texte), `prix_a_verifier`,
-  et pour Dofus `pastille` (l'oeuf, pour les petites pastilles rondes).
+  et `pastille` : le petit emblème montré dans les ronds de « Bientôt » (l'oeuf de Dofus, et l'emblème des marques
+  dont le logo est trop large pour un rond : plus de 1,6 fois plus large que haut). Une marque au logo trop large
+  sans emblème officiel montre ses initiales.
 - `affichage` :
   - `blanc` : logo d'une seule couleur, à peindre en blanc sur la carte (icônes Simple Icons) ;
   - `plaque` : logo en couleurs, posé sur une petite plaque blanche ;
@@ -139,6 +141,7 @@ ramené au mois (prix des 4 semaines x 13 / 12), et le prix réel est écrit dan
 | Dropbox | 11,99 € / mois | Plus, 2 To | Art. quechoisir.org | oui |
 | Adobe Creative Cloud | 23,87 € / mois | Photographie 1 To | Art. phototrend.fr 10/2026 | oui |
 | ChatGPT | 22,99 € / mois | Plus | Art. jechange.fr 10/2026 | non |
+| Claude | 18,00 € / mois | Pro | Off. claude.com/pricing : 20 $ par mois hors taxes, sans prix en euros ; 18 € TTC non confirmé | oui |
 | NordVPN | 12,99 € / mois | Basique sans engagement (environ 3,09 à 3,49 € par mois sur 2 ans) | Art. monpetitforfait.com | oui |
 | Canva | 12,00 € / mois | Pro (110 € par an) | Art. siecledigital.fr 30/03/2026 | oui |
 | Duolingo | 110,99 € / an | Super | Art. spliiit.com (94,99 à 122,99 selon les sources) | oui |
@@ -169,6 +172,11 @@ autre changement, sauf `orange.svg` (couleur orange ajoutée au carré).
 |---|---|---|
 | netflix, amazonprime, appletv, paramountplus, crunchyroll, youtubepremium (icône YouTube), spotify, deezer, applemusic, youtubemusic, xboxgamepass (icône Xbox), playstationplus (icône PlayStation), nintendoswitchonline (icône Nintendo Switch), eaplay (icône EA), ubisoftplus (icône Ubisoft), orange, revolut, strava, lequipe, audible, icloud, dropbox, adobe (icône Creative Cloud), chatgpt (icône OpenAI), nordvpn, canva, duolingo, uberone (icône Uber), deliveroo | SI (repris de `maquettes/logos`) | CC0 |
 | hbomax, amazonmusic, discordnitro (icône Discord), fortnitecrew (icône Fortnite) | SI | CC0 |
+| claude.svg | SI « Claude » (simple-icons 16.37.0, 15/11/2026) | CC0 |
+| apple.svg (pastille d'Apple TV) | SI « Apple » (simple-icons 16.37.0, 15/11/2026) | CC0 |
+| nvidia.svg (pastille de GeForce Now) | SI « NVIDIA » (simple-icons 16.37.0, 15/11/2026) | CC0 |
+| amazon.svg (pastille d'Amazon Prime et de Kindle Unlimited) | WC « Amazon icon.svg » (15/11/2026) | domaine public (PD-textlogo) |
+| creditmutuel-embleme, bouyguestelecom-embleme, societegenerale-embleme, groupama-embleme, allianz-embleme, veolia-embleme (.svg) ; edf-embleme, banquepopulaire-embleme (.png) | le symbole seul du logo de la marque ci-dessous (même fichier, recadré : viewBox pour les SVG, découpe pour les PNG) | celle du logo de la marque |
 | disneyplus, canalplus, worldofwarcraft, sfr, free, freemobile (logo Free), sosh, bouyguestelecom, creditmutuel, axa, maif, groupama, allianz, lemonde, microsoft365 | WC (repris de `maquettes/logos`) | domaine public (logo simple) selon Commons |
 | dofus.png, dofus-oeuf.png | fr.wikipedia (repris de `maquettes/logos`) | logo du jeu, propriété d'Ankama |
 | adn.png | WC « ADN Logo 2016.png » | domaine public |

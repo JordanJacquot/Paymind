@@ -4,7 +4,7 @@
 //! - le manifeste des commandes de l'appli (docs\regles-tauri.md du dépôt Mindset, règle 2) : sans lui, Tauri
 //!   laisserait toute page locale appeler toutes les commandes ; avec lui, chaque commande demande sa permission
 //!   `allow-<commande>`, donnée fenêtre par fenêtre dans capabilities\ ;
-//! - l'icône de Paymind (icons\Paymind.ico, faite par outils\icone.ps1 : une carte bancaire verte) ;
+//! - l'icône de Paymind (icons\Paymind.ico, faite par outils\icone.ps1 : une carte « glitchée ») ;
 //! - la fiche de version : tauri-build écrit productName (« Mindset », tauri.conf.json) comme description de l'exe,
 //!   ce qu'affiche le Gestionnaire des tâches (contrat-appli, partie 4), et la version du Cargo.toml ;
 //! - le runtime C rangé dans l'exe (réglage par défaut de tauri-build) : aucune VCRUNTIME140.dll à installer ;

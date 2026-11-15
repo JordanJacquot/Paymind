@@ -86,12 +86,12 @@ jobs:
           & ..\_mindset\outils\verifier-tauri.ps1 -Projet paymind-appli
           exit $LASTEXITCODE
 
-      - name: "Construction de publication et dossier de Paymind (outils\\construire-rust.ps1 : Mindset.exe, Paymind.exe, version.json)"
+      - name: "Construction de publication et dossier de Paymind (outils\\construire-rust.ps1 : Mindset.exe, Paymind.exe, version.json, fichiers\\Paymind.ico)"
         run: |
           & ..\outils\construire-rust.ps1 -Sortie (Join-Path $env:RUNNER_TEMP 'paymind-rust')
           if (-not $?) { exit 1 }
 
-      - name: "Le zip comme Mindset l'attend (outils\\zip-rust.ps1 : fichiers, version.json, fiches de version, sans construction d'essai, aucun runtime C à part)"
+      - name: "Le zip comme Mindset l'attend (outils\\zip-rust.ps1 : fichiers, version.json, icône du logo de la console 3D, fiches de version, sans construction d'essai, aucun runtime C à part)"
         run: |
           & ..\outils\zip-rust.ps1 -Dossier (Join-Path $env:RUNNER_TEMP 'paymind-rust\Paymind') -Zip (Join-Path $env:RUNNER_TEMP 'Paymind.zip') -VerifierImports ..\_mindset\outils\verifier-imports.ps1
           exit $LASTEXITCODE
