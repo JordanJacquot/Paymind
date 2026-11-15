@@ -19,7 +19,7 @@ Les logos des marques restent la propriété de leurs marques ; ils servent seul
   mois de 30 jours, le 29 février, le passage d'année).
 - [x] **3. Le portefeuille** : l'accueil de la maquette F (cartes, total par mois et par an, « Bientôt ») ;
   « Ajoute ton premier abonnement » quand la liste est vide. Vérifié par des captures comparées à la maquette.
-- [ ] **4. La liste toute prête** : environ 80 abonnements avec leur logo officiel et leur prix habituel (streaming,
+- [x] **4. La liste toute prête** : environ 80 abonnements avec leur logo officiel et leur prix habituel (streaming,
   musique, jeux dont Dofus et World of Warcraft, opérateurs, banques et assurances dont Crédit Mutuel, sport, presse,
   logiciels), la recherche et « Un abonnement à moi ». Vérifié : ajouter Netflix fait apparaître sa carte et change le total.
 - [ ] **5. La fiche** : prix, rythme, date, renouvellement automatique, pause, suppression ; le rappel au choix (jamais,
