@@ -314,10 +314,15 @@
       const n = Math.max(1, Math.min(64, (p.images | 0) || 1)), h = hauteur, w = Math.round((img.naturalWidth / n) * (h / img.naturalHeight));
       const el = document.createElement('span');
       el.className = `planche${pixel ? ' pixel' : ''}${p.miroir ? ' miroir' : ''}${n === 1 ? ' levite' : ''}`;
-      Object.assign(el.style, { width: `${w}px`, height: `${h}px`, backgroundImage: `url('${url}')`, backgroundSize: `${w * n}px ${h}px` });
+      Object.assign(el.style, { width: `${w}px`, height: `${h}px` });
       if (p.lueur && /^#[0-9a-f]{6}$/i.test(p.lueur)) el.style.filter = `drop-shadow(0 0 8px ${p.lueur})`;
+      // (animée : la planche entière glisse dans son cadre, une image à la fois, par transform : la carte graphique
+      // s'en charge seule, sans redessiner la page à chaque image, même quand la 3D occupe la page)
+      const k = n > 1 ? document.createElement('i') : el;
+      Object.assign(k.style, { width: `${w * n}px`, height: `${h}px`, backgroundImage: `url('${url}')`, backgroundSize: `${w * n}px ${h}px` });
+      if (k !== el) el.appendChild(k);
       hote.appendChild(el);
-      if (n > 1) el.animate([{ backgroundPositionX: '0px' }, { backgroundPositionX: `-${w * n}px` }], { duration: n * Math.max(30, (p.delai | 0) || 100), iterations: Infinity, easing: `steps(${n})` });
+      if (n > 1) k.animate([{ transform: 'translateX(0px)' }, { transform: `translateX(-${w * n}px)` }], { duration: n * Math.max(30, (p.delai | 0) || 100), iterations: Infinity, easing: `steps(${n})` });
     };
     img.src = url;
   }
@@ -361,8 +366,10 @@
   // photo ou un GIF sur fond), elle est montrée en vignette arrondie. Le fichier est lu une fois pour le savoir.
   function mascotteCoin(hote, url) {
     const img = new Image(); img.alt = ''; img.decoding = 'async';
-    img.onerror = () => img.remove();
-    hote.appendChild(img);
+    // (dans un support : c'est lui qui flotte, l'image et son ombre ne sont dessinées qu'une fois)
+    const support = document.createElement('span'); support.className = 'support';
+    img.onerror = () => support.remove();
+    support.appendChild(img); hote.appendChild(support);
     fetch(url).then((r) => (r.ok ? r.blob() : Promise.reject())).then(async (b) => {
       const o = new Uint8Array(await b.arrayBuffer()), txt = (s) => { for (let i = 0; i + s.length < o.length; i++) { let k = 0; while (k < s.length && o[i + k] === s.charCodeAt(k)) k++; if (k === s.length) return true; } return false; };
       let anime = false;
@@ -376,9 +383,10 @@
         const d = k.getImageData(0, 0, 24, 24).data; opaque = true;
         for (const [x, y] of [[0, 0], [23, 0], [0, 23], [23, 23], [12, 0], [0, 12], [23, 12], [12, 23]]) if (d[(y * 24 + x) * 4 + 3] < 250) { opaque = false; break; }
       } catch (e) {}
-      img.className = `${opaque ? 'vignette' : ''}${anime ? '' : ' flotte'}`.trim();
+      img.className = opaque ? 'vignette' : '';
+      support.classList.toggle('flotte', !anime);
       img.src = URL.createObjectURL(b);
-    }).catch(() => { img.className = 'flotte'; img.src = url; });
+    }).catch(() => { support.classList.add('flotte'); img.src = url; });
   }
 
   // ---------------------------------------------------------------- le haut : logo et nom (retour à l'accueil),

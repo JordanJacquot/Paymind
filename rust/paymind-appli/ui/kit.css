@@ -54,7 +54,10 @@ button:focus, input:focus { outline: none; }
 .f:not(.plaque):not(.tuile):focus-visible { box-shadow: 0 0 0 2px var(--fond), 0 0 0 4px var(--S); }
 
 /* ---------------------------------------------------------------- le haut */
-.haut { flex: 0 0 auto; height: 64px; box-sizing: border-box; padding: 0 22px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--ligne); background: color-mix(in srgb, var(--fond) 82%, transparent); backdrop-filter: blur(10px); }
+.haut { flex: 0 0 auto; height: 64px; box-sizing: border-box; padding: 0 22px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--ligne); background: color-mix(in srgb, var(--fond) 82%, transparent); }
+/* (le flou sous le haut, seulement quand il y a quelque chose à flouter : le fond d'image d'un thème perso. Sans lui,
+   le haut ne recouvre que le dégradé du cadre, que le flou ne changeait pas : rien à recalculer à chaque image) */
+#decor.vu ~ .haut { backdrop-filter: blur(10px); }
 .marque { display: flex; align-items: center; gap: 10px; padding: 3px 10px 3px 3px; border-radius: 14px; margin-right: 10px; white-space: nowrap; transition: background 200ms ease; }
 .marque:hover { background: rgba(255,255,255,0.06); }
 #logoHote { display: flex; align-items: center; }
@@ -88,7 +91,9 @@ button:focus, input:focus { outline: none; }
 @keyframes g1 { 0% { opacity: 0.9; transform: translate(-4px, 0); clip-path: inset(10% 0 55% 0); } 33% { opacity: 0.9; transform: translate(3px, 1px); clip-path: inset(55% 0 15% 0); } 66% { opacity: 0.8; transform: translate(-2px, 0); clip-path: inset(30% 0 40% 0); } 100% { opacity: 0; } }
 @keyframes g2 { 0% { opacity: 0.9; transform: translate(4px, 0); clip-path: inset(60% 0 10% 0); } 33% { opacity: 0.9; transform: translate(-3px, -1px); clip-path: inset(5% 0 70% 0); } 66% { opacity: 0.8; transform: translate(2px, 1px); clip-path: inset(45% 0 25% 0); } 100% { opacity: 0; } }
 /* Les images animées d'un thème perso (planches : images côte à côte) */
-.planche { display: inline-block; background-repeat: no-repeat; flex: 0 0 auto; }
+.planche { display: inline-block; background-repeat: no-repeat; flex: 0 0 auto; overflow: hidden; }
+/* (une planche animée : toute la planche dans le cadre, elle glisse d'une image à la fois, kit.js) */
+.planche > i { display: block; background-repeat: no-repeat; will-change: transform; }
 .planche.pixel { image-rendering: pixelated; }
 .planche.miroir { transform: scaleX(-1); }
 .planche.levite { animation: levite 3s ease-in-out infinite; }
@@ -102,7 +107,9 @@ button:focus, input:focus { outline: none; }
 body.sur-accueil #mascotte.mascotte-coin:not(:empty) { display: block; }
 #mascotte.mascotte-coin img { display: block; max-width: 210px; max-height: 170px; object-fit: contain; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55)); }
 #mascotte.mascotte-coin img.vignette { max-height: 150px; border-radius: 20px; border: 2px solid color-mix(in srgb, var(--P) 55%, transparent); box-shadow: 0 0 18px color-mix(in srgb, var(--P) 35%, transparent), 0 10px 26px rgba(0,0,0,0.55); filter: none; }
-#mascotte.mascotte-coin img.flotte { animation: flotteM 4.5s ease-in-out infinite; }
+/* (elle flotte dans son support, qui seul bouge : son ombre est dessinée une fois avec elle, puis seulement déplacée) */
+#mascotte.mascotte-coin .support { display: block; }
+#mascotte.mascotte-coin .support.flotte { animation: flotteM 4.5s ease-in-out infinite; will-change: translate; }
 @keyframes flotteM { 50% { translate: 0 -9px; } }
 
 #ecran { flex: 1; min-height: 0; }

@@ -17,6 +17,9 @@ if (!essai) { window.kitPlasma = { ok: false }; }
 else demarrer();
 
 function demarrer() {
+  // La finesse des toiles 3D : celle de l'écran, 1,5 au plus (à 2, la carte graphique dessine 78 % de points en plus,
+  // pour des formes déjà lissées par l'antialias)
+  const finesse = () => Math.min(devicePixelRatio || 1, 1.5);
   const I = () => window.kitIcones || {};
   const lire = (n, d) => getComputedStyle(document.body).getPropertyValue(n).trim() || d;
   const police = () => lire('--police-app', '"Segoe UI Variable Display", "Segoe UI", sans-serif');
@@ -90,7 +93,7 @@ function demarrer() {
   function creerAccueil() {
     const toile = document.createElement('canvas'); toile.className = 'toile3d';
     const r = new THREE.WebGLRenderer({ canvas: toile, antialias: true, alpha: true, powerPreference: 'high-performance' });
-    r.setPixelRatio(Math.min(devicePixelRatio, 2)); r.toneMapping = THREE.ACESFilmicToneMapping; r.setClearColor(0x000000, 0);
+    r.setPixelRatio(finesse()); r.toneMapping = THREE.ACESFilmicToneMapping; r.setClearColor(0x000000, 0);
     const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
     const etoiles = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(Array.from({ length: 2400 }, (_, i) => (i % 3 === 0 ? (Math.random() - 0.5) * 60 : i % 3 === 1 ? Math.random() * 22 - 6 : -8 - Math.random() * 30)), 3)),
       new THREE.PointsMaterial({ size: 0.05, transparent: true, opacity: 0.55, depthWrite: false }));
@@ -249,7 +252,7 @@ function demarrer() {
 
   // ---------------------------------------------------------------- les anneaux de plasma des pages (une toile par-dessus)
   const toileA = document.getElementById('plasma');
-  const rA = new THREE.WebGLRenderer({ canvas: toileA, antialias: true, alpha: true }); rA.setPixelRatio(Math.min(devicePixelRatio, 2)); rA.autoClear = false; rA.setClearColor(0x000000, 0);
+  const rA = new THREE.WebGLRenderer({ canvas: toileA, antialias: true, alpha: true }); rA.setPixelRatio(finesse()); rA.autoClear = false; rA.setClearColor(0x000000, 0);
   const sA = new THREE.Scene(), camA = new THREE.PerspectiveCamera(30, 1, 0.1, 20); camA.position.z = 4.7;
   const matA = new THREE.ShaderMaterial({ vertexShader: vsUv, fragmentShader: fsAnneau, uniforms: { t: { value: 0 }, v: { value: 0.5 }, force: { value: 1.05 }, alerte: { value: 0 }, ...unis() } });
   const geosA = {}; const anneauA = new THREE.Mesh(new THREE.TorusGeometry(1, 0.14, 32, 220), matA); sA.add(anneauA);
@@ -289,7 +292,7 @@ function demarrer() {
   let sol = null;
   function creerSolaire() {
     const toile = document.createElement('canvas'); toile.className = 'toile3d';
-    const r = new THREE.WebGLRenderer({ canvas: toile, antialias: true }); r.setPixelRatio(Math.min(devicePixelRatio, 2));
+    const r = new THREE.WebGLRenderer({ canvas: toile, antialias: true }); r.setPixelRatio(finesse());
     const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(40, 2, 0.1, 100);
     const groupe = new THREE.Group(); scene.add(groupe);
     scene.add(new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(Array.from({ length: 900 }, () => (Math.random() - 0.5) * 60), 3)), new THREE.PointsMaterial({ color: 0x8FF4FF, size: 0.05 })));
@@ -354,18 +357,28 @@ function demarrer() {
   }
 
   // ---------------------------------------------------------------- la boucle : rien quand l'appli est cachée ou en pause
-  let enPause = false, boucle = 0;
+  // 60 images par seconde au plus, quel que soit l'écran (un écran 144 Hz en demanderait 144) : entre deux images,
+  // la page attend sans rien demander (une minuterie jusqu'à l'heure de l'image suivante, puis requestAnimationFrame
+  // pour rester calée sur l'écran). Les heures prévues avancent d'un pas fixe : 60 images par seconde en moyenne, même
+  // quand l'écran ne tombe pas juste. Le temps des animations vient de l'horloge : leur vitesse ne change pas.
+  const PAS_IMAGE = 1000 / 60;
+  let enPause = false, boucle = 0, attente = 0, prochaine = 0;
   const t0 = performance.now();
   function image() {
     boucle = 0;
     if (document.hidden || enPause) return;
-    boucle = requestAnimationFrame(image);
-    const t = (performance.now() - t0) / 1000;
+    const maintenant = performance.now();
+    // (en retard de plus d'une image, au départ ou après une pause : on repart de maintenant)
+    prochaine = maintenant - prochaine > PAS_IMAGE ? maintenant + PAS_IMAGE : prochaine + PAS_IMAGE;
+    const d = prochaine - maintenant - 3;
+    if (d > 1) attente = setTimeout(() => { attente = 0; if (!document.hidden && !enPause) boucle = requestAnimationFrame(image); }, d);
+    else boucle = requestAnimationFrame(image);
+    const t = (maintenant - t0) / 1000;
     if (document.getElementById('accueil3d')) { acc ??= creerAccueil(); acc.image(t); }
     if (document.querySelector('#ecran .reseau3d')) { sol ??= creerSolaire(); sol.image(t); }
     anneaux(t);
   }
-  const relancer = () => { if (!boucle && !document.hidden && !enPause) boucle = requestAnimationFrame(image); };
+  const relancer = () => { if (!boucle && !attente && !document.hidden && !enPause) boucle = requestAnimationFrame(image); };
   document.addEventListener('visibilitychange', relancer);
   couleurs();
 
