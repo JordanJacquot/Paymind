@@ -20,6 +20,11 @@ function demarrer() {
   // La finesse des toiles 3D : celle de l'écran, 1,5 au plus (à 2, la carte graphique dessine 78 % de points en plus,
   // pour des formes déjà lissées par l'antialias)
   const finesse = () => Math.min(devicePixelRatio || 1, 1.5);
+  // Les glissements (une tuile qui rejoint sa place, un anneau qui se remplit) : la part du chemin faite en une image à
+  // 60 images par seconde, ajustée au temps vraiment écoulé depuis l'image d'avant (images60 : ce temps, compté en
+  // images à 60 par seconde). Ils vont ainsi à la même vitesse sur tous les écrans, celle qu'ils avaient à 60 Hz.
+  let images60 = 1;
+  const lisse = (k) => 1 - Math.pow(1 - k, images60);
   const I = () => window.kitIcones || {};
   const lire = (n, d) => getComputedStyle(document.body).getPropertyValue(n).trim() || d;
   const police = () => lire('--police-app', '"Segoe UI Variable Display", "Segoe UI", sans-serif');
@@ -204,16 +209,16 @@ function demarrer() {
           const d = Math.max(9.5, 10.5 * Math.min(1.6, 1.75 / Math.min(cam.aspect, 1.75) * (cam.aspect < 1.2 ? 1.25 : 1)));
           cam.position.set(0, 0.5, d); cam.lookAt(0, 0, 0); cam.updateProjectionMatrix();
         }
-        this.pos += (this.cible - this.pos) * (this.tenu ? 0.35 : 0.12); rangee.position.x = -this.pos * PAS;
+        this.pos += (this.cible - this.pos) * lisse(this.tenu ? 0.35 : 0.12); rangee.position.x = -this.pos * PAS;
         const n = Math.max(0, Math.min(this.items.length - 1, Math.round(this.pos)));
         if (n !== this.sel) { this.sel = n; document.dispatchEvent(new CustomEvent('kit:tuile', { detail: { i: n } })); }
         this.items.forEach((x, i) => {
           const d = i - this.pos, proche = Math.max(0, 1 - Math.abs(d)), s = i === this.sel && !this.tenu;
-          x.g.position.y += ((s ? 0.25 : 0) - x.g.position.y) * 0.1; x.g.position.z = proche * 0.7 - Math.min(2, Math.abs(d)) * 0.25;
-          x.g.rotation.y = -Math.max(-1, Math.min(1, d)) * 0.28 + (s ? this.souris.x * 0.2 : 0); x.g.rotation.x += ((s ? this.souris.y * 0.14 : 0) - x.g.rotation.x) * 0.1;
-          const u = x.bord.material.uniforms; u.t.value = t; u.force.value += ((s ? 1 : 0.2 + proche * 0.4) - u.force.value) * 0.1;
+          x.g.position.y += ((s ? 0.25 : 0) - x.g.position.y) * lisse(0.1); x.g.position.z = proche * 0.7 - Math.min(2, Math.abs(d)) * 0.25;
+          x.g.rotation.y = -Math.max(-1, Math.min(1, d)) * 0.28 + (s ? this.souris.x * 0.2 : 0); x.g.rotation.x += ((s ? this.souris.y * 0.14 : 0) - x.g.rotation.x) * lisse(0.1);
+          const u = x.bord.material.uniforms; u.t.value = t; u.force.value += ((s ? 1 : 0.2 + proche * 0.4) - u.force.value) * lisse(0.1);
           if (x.anneau) { x.anneau.material.uniforms.t.value = t; x.anneau.material.uniforms.force.value = s ? 1.2 : 0.7; }
-          if (x.img) { const b = x.img.userData.base, c = s ? b + Math.abs(Math.sin(t * 2.6)) * 0.07 : b; x.img.position.y += (c - x.img.position.y) * (s ? 0.6 : 0.15); }
+          if (x.img) { const b = x.img.userData.base, c = s ? b + Math.abs(Math.sin(t * 2.6)) * 0.07 : b; x.img.position.y += (c - x.img.position.y) * lisse(s ? 0.6 : 0.15); }
         });
         r.render(scene, cam);
       },
@@ -276,7 +281,7 @@ function demarrer() {
       // (un anneau neuf reprend la valeur affichée de celui qu'il remplace ; au premier affichage, il part de 0)
       if (el._cle === undefined) { el._cle = cleAnneau(el, i); el._v = vus.get(el._cle) ?? 0; }
       const b = el.getBoundingClientRect(); if (b.width < 4 || b.bottom < z.top || b.top > z.bottom || el.offsetParent === null) return;
-      const cible = +el.dataset.anneau || 0; el._v += (cible - el._v) * 0.06; vus.set(el._cle, el._v);
+      const cible = +el.dataset.anneau || 0; el._v += (cible - el._v) * lisse(0.06); vus.set(el._cle, el._v);
       const ep = +(el.dataset.ep || 0.14); if (!geosA[ep]) geosA[ep] = new THREE.TorusGeometry(1, ep, 32, 220); anneauA.geometry = geosA[ep];
       const u = matA.uniforms; u.t.value = t; u.v.value = el._v; u.alerte.value = el.dataset.alerte ? 1 : 0;
       const dx = (sourisP.x - (b.left + b.width / 2)) / W, dy = (sourisP.y - (b.top + b.height / 2)) / H;
@@ -362,7 +367,7 @@ function demarrer() {
   // pour rester calée sur l'écran). Les heures prévues avancent d'un pas fixe : 60 images par seconde en moyenne, même
   // quand l'écran ne tombe pas juste. Le temps des animations vient de l'horloge : leur vitesse ne change pas.
   const PAS_IMAGE = 1000 / 60;
-  let enPause = false, boucle = 0, attente = 0, prochaine = 0;
+  let enPause = false, boucle = 0, attente = 0, prochaine = 0, derniere = 0;
   const t0 = performance.now();
   function image() {
     boucle = 0;
@@ -373,6 +378,8 @@ function demarrer() {
     const d = prochaine - maintenant - 3;
     if (d > 1) attente = setTimeout(() => { attente = 0; if (!document.hidden && !enPause) boucle = requestAnimationFrame(image); }, d);
     else boucle = requestAnimationFrame(image);
+    // (au départ, ou après une pause de plus d'un dixième de seconde : une seule image, rien ne saute)
+    images60 = derniere && maintenant - derniere < 100 ? (maintenant - derniere) / PAS_IMAGE : 1; derniere = maintenant;
     const t = (maintenant - t0) / 1000;
     if (document.getElementById('accueil3d')) { acc ??= creerAccueil(); acc.image(t); }
     if (document.querySelector('#ecran .reseau3d')) { sol ??= creerSolaire(); sol.image(t); }

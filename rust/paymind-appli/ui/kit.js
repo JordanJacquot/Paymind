@@ -257,6 +257,27 @@
     .observe(document.body, { childList: true, subtree: true, characterData: true });
   typoDans(document.body);
 
+  // ---------------------------------------------------------------- le bord de plasma qui tourne (kit.css)
+  // Chaque plaque et chaque bord de plasma reçoit son bord (kit-bord) et sa lueur (kit-lueur) : un cadre fixe, découpé
+  // à la forme du bord, où tourne un calque (kit-tour) peint une seule fois. Il tourne par transform : la carte
+  // graphique s'en charge seule, sans redessiner la page à chaque image. Posés dès que la plaque apparaît, avant
+  // qu'elle ne soit montrée (comme le faisaient ::before et ::after) ; vides, cachés aux lecteurs d'écran.
+  const BORDS = '.plaque, .plasma-bord';
+  function poserBord(el) {
+    if (el.querySelector(':scope > kit-bord')) return;
+    const cadre = (nom) => { const c = document.createElement(nom); c.setAttribute('aria-hidden', 'true'); c.appendChild(document.createElement('kit-tour')); return c; };
+    el.prepend(cadre('kit-bord')); el.append(cadre('kit-lueur'));
+  }
+  function bordsDans(n) {
+    if (n.nodeType !== 1) return;
+    if (n.matches(BORDS)) poserBord(n);
+    n.querySelectorAll(BORDS).forEach(poserBord);
+  }
+  // (une plaque dont le contenu est remplacé retrouve aussi son bord)
+  new MutationObserver((ms) => { for (const m of ms) { m.addedNodes.forEach(bordsDans); if (m.target.matches?.(BORDS)) poserBord(m.target); } })
+    .observe(document.body, { childList: true, subtree: true });
+  bordsDans(document.body);
+
   // ---------------------------------------------------------------- liaison avec l'appli
   // (une appli Tauri pose son propre pont, window.kitPont, avant ce fichier : ipc.js ; sinon, WebView2 de PowerShell)
   const webview = window.kitPont || window.chrome?.webview;
@@ -705,7 +726,7 @@
       const centre = `<span class="centre"><b class="grand${a.ton ? ` ${esc(a.ton)}` : ''}">${esc(a.texte ?? a.valeur)}</b>${a.petit ?? (a.unite ? '' : `/${a.sur || 100}`) ? `<small>${esc(a.petit ?? `/${a.sur || 100}`)}</small>` : ''}${a.unite ? `<small>${esc(a.unite)}</small>` : ''}</span>`;
       visuel = `<span class="anneau grand-anneau" data-anneau="${p / 100}" data-ep="0.11" style="--p:${p}">${centre}</span>`;
     } else if (urlSure(m.image)) visuel = `<span class="jaquette-m" style="--img:url('${urlSure(m.image)}')"><b>${esc(m.legende || '')}</b></span>`;
-    else visuel = `<span class="grande-ic" style="--a:${couleur(m.couleur)}">${ico(m.icone || 'etoile', 1.2)}</span>`;
+    else visuel = `<span class="grande-ic" style="--a:${couleur(m.couleur)}"><span class="flotteur">${ico(m.icone || 'etoile', 1.2)}</span></span>`;
     const boutons = (m.boutons || []).map((b, i) => btn({ ...b, style: b.style || (i ? 'second' : '') })).join('');
     return `<aside class="module plasma-bord fort"><span class="reflet"></span>${visuel}
       ${m.titre ? `<h3>${esc(m.titre)}</h3>` : ''}${m.texte ? `<p>${esc(m.texte)}</p>` : ''}
