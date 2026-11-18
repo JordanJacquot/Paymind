@@ -41,20 +41,23 @@ button:focus, input:focus { outline: none; }
    cadre fixe, découpé en anneau par son masque, où tourne un calque carré (kit-tour) assez grand pour couvrir le cadre
    (150 % de son plus grand côté), peint une fois d'un dégradé conique centré. Un dégradé conique tourné autour de son
    centre donne la même image que le même dégradé commencé plus loin : c'est le bord d'avant, mais il tourne par
-   transform (la carte graphique), au lieu d'être repeint à chaque image. */
+   transform (la carte graphique), au lieu d'être repeint à chaque image.
+   La lueur n'a plus de flou (filter: blur) : le masque passe APRÈS le filtre, il ne gardait du flou qu'une bande de
+   4 px au bord net, presque unie, pour un flou recalculé à chaque image (le calque tourne dessous). Sans lui, la même
+   bande, son opacité baissée d'autant (le flou laissait environ 55 % de la couleur dans la bande). */
 .plasma-bord > kit-bord, .plaque > kit-bord { display: block; position: absolute; inset: -1.5px; border-radius: inherit; padding: 1.5px; pointer-events: none;
   overflow: hidden; container-type: size;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
   opacity: 0.4; transition: opacity 250ms ease; }
-.plasma-bord > kit-lueur, .plaque.f > kit-lueur { display: block; position: absolute; inset: -4px; border-radius: inherit; padding: 4px; pointer-events: none; z-index: -1; filter: blur(10px);
+.plasma-bord > kit-lueur, .plaque.f > kit-lueur { display: block; position: absolute; inset: -4px; border-radius: inherit; padding: 4px; pointer-events: none; z-index: -1;
   overflow: hidden; container-type: size;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
   opacity: 0; transition: opacity 250ms ease; }
 kit-tour { position: absolute; left: 50%; top: 50%; width: 150cqmax; height: 150cqmax; margin: -75cqmax 0 0 -75cqmax;
   background: conic-gradient(var(--P), var(--S), var(--T), var(--P)); animation: tourne 7s linear infinite; }
 .plasma-bord.fort > kit-bord, .plaque.f:focus > kit-bord, .plaque.f:hover > kit-bord, .plaque.oui > kit-bord { opacity: 1; }
-.plasma-bord.fort > kit-lueur { opacity: 0.45; }
-.plaque.f:focus > kit-lueur, .plaque.oui > kit-lueur { opacity: 0.55; }
+.plasma-bord.fort > kit-lueur { opacity: 0.25; }
+.plaque.f:focus > kit-lueur, .plaque.oui > kit-lueur { opacity: 0.3; }
 .plaque:not(.f) > kit-lueur { display: none; }
 /* La sélection au clavier des petits éléments : un anneau de plasma autour */
 .f:not(.plaque):not(.tuile):focus-visible { box-shadow: 0 0 0 2px var(--fond), 0 0 0 4px var(--S); }
